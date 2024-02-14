@@ -32,11 +32,10 @@ int main() {
                 num_arguments++;
             }
         }
-        printf("s");
         printf("%d\n", num_arguments);
-        printf("s1\n");
+
         char **arguments = calloc(num_arguments,sizeof(char*));
-        printf("s2\n");
+
         for (int i = 0; i < num_arguments; i++){
             arguments[i] = calloc(token_size,sizeof(char));
         }
@@ -48,7 +47,7 @@ int main() {
         int arg = 0;
         int arg_count = 0;
 
-        printf("s3\n");
+
 
         while (input[c] != '\n'){
             if (input[c] == ' '){
@@ -64,7 +63,7 @@ int main() {
         }
         arguments[arg][arg_count] = '\0';
 
-        printf("s4\n");
+
 
 
         // while (token != NULL) {
@@ -83,15 +82,17 @@ int main() {
         // printf("You entered: %s", input);
         for (int k = 0; k < num_arguments; k++){
             printf("%s-", *(arguments+k));
-            // free(*(arguments+k));
+            free(*(arguments+k));
         }
-        // free(arguments);
+        free(arguments);
 
         printf("\n");
 
         printf("%s$ ", cwd);
         // char* input = calloc(cache_size, sizeof(char));
-        // free(input);
+
+        // printf("%s", input);
+        free(input);
         char* input = calloc(cache_size, sizeof(char));
         fgets(input, cache_size*sizeof(char), stdin);
         // printf("%d",strcmp(input, "exit\n"));
@@ -99,7 +100,7 @@ int main() {
             done = 1;
         }
     }
-    free(input);
+    // free(input);
     
     
     
