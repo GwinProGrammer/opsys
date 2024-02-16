@@ -242,30 +242,20 @@ int main() {
             }
             else if (rc != 0){
                 int status;
-                pid_t child_pid = waitpid(rc, &status,0);
+                pid_t child_pid = waitpid(rc, &status,WNOHANG);
 
-                pid_t child_pid;
-                do
-                {
-                    child_pid = waitpid(rc, &status, WNOHANG);
-                    if (child_pid == 0)
-                    {
-                        printf("Still waiting for the child %d\n", rc);
-                        sleep(1);
-                    }
-                }  while (child_pid == 0);
-                // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status );
-                    printf("[process %d terminated abnormally]\n",  child_pid);
-                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
-                }
-                else if ( WIFEXITED( status ) )
-                {
-                    int exit_status = WEXITSTATUS( status );
-                    printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                }
+                // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                // {                             /*  by a signal (e.g., seg fault) */
+                //     int exit_status = WTERMSIG( status );
+                //     printf("[process %d terminated abnormally]\n",  child_pid);
+                //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                // }
+                // else if ( WIFEXITED( status ) )
+                // {
+                //     int exit_status = WEXITSTATUS( status );
+                //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                // }
             }
             else {
                 int result = execve(arguments[0],arguments,NULL);
