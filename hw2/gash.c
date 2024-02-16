@@ -54,19 +54,6 @@ int main() {
         e++;
     }
 
-    // for (int i = 0; i < num_directories; i++){
-    //     // printf("%s\n",directories[i]);
-    //     DIR * dir = opendir( directories[i]);   
-    //     if ( dir == NULL )
-    //     {
-    //         perror( "opendir() failed" );
-    //         return EXIT_FAILURE;
-    //     }
-    // }
-
-
-    
-
  
 
     int done = 0;
@@ -95,51 +82,121 @@ int main() {
         }
 
         int num_arguments = 1;
+        int p1num_arguments;
+        int p2num_arguments  = 0;
+        int ispipe = 0;
+        int run_in_back = 0;
+
         for (int i = 0; i < cache_size; i++) {
             if (input[i] == ' ') {
-                num_arguments++;
+                if (ispipe){
+                    p2num_arguments++;
+                }
+                else{
+                    num_arguments++;
+                }
+                
+            }
+            if (input[i] == '&'){
+                run_in_back = 1;
+            }
+            if (input[i] == '|'){
+                ispipe = 1;
+                p1num_arguments = num_arguments -1;
             }
         }
-        printf("%d\n", num_arguments);
 
-        char **arguments = calloc(num_arguments,sizeof(char*));
+        printf("%d\n", p1num_arguments);
+        printf("%d\n", p2num_arguments);
 
-        for (int i = 0; i < num_arguments; i++){
-            arguments[i] = calloc(token_size,sizeof(char));
-        }
+        char **arguments;
+        char **arguments2;
 
-        // char *token = calloc(token_size,sizeof(char));
-        int j = 0;
+        if (ispipe){ //pipe
+            arguments = calloc(p1num_arguments,sizeof(char*));
+            arguments2 = calloc(p2num_arguments,sizeof(char*));
 
-        int c = 0;
-        int arg = 0;
-        int arg_count = 0;
-
-
-
-        while (input[c] != '\n'){
-            if (input[c] == ' '){
-                arguments[arg][arg_count] = '\0';
-                arg++;
-                arg_count = 0;
+            for (int i = 0; i < p1num_arguments; i++){
+                arguments[i] = calloc(token_size,sizeof(char));
             }
-            else{
-                arguments[arg][arg_count] = input[c];
-                arg_count++;
+            for (int i = 0; i < p2num_arguments; i++){
+                arguments2[i] = calloc(token_size,sizeof(char));
             }
-            c++;
+
+            int c = 0;
+            int arg = 0;
+            int arg_count = 0;
+
+
+
+            while (input[c] != '|'){
+                if (input[c] == ' '){
+                    arguments[arg][arg_count] = '\0';
+                    arg++;
+                    arg_count = 0;
+                }
+                else{
+                    arguments[arg][arg_count] = input[c];
+                    arg_count++;
+                }
+                c++;
+            }
+
+            c+=2;
+            arg = 0;
+            arg_count = 0;
+
+            while (input[c] != '\n'){
+                if (input[c] == ' '){
+                    arguments2[arg][arg_count] = '\0';
+                    arg++;
+                    arg_count = 0;
+                }
+                else{
+                    arguments2[arg][arg_count] = input[c];
+                    arg_count++;
+                }
+                c++;
+            }
+
+            arguments2[arg][arg_count] = '\0';
+            
         }
-        arguments[arg][arg_count] = '\0';
+        else{ //not pipe
+            arguments = calloc(num_arguments,sizeof(char*));
+            for (int i = 0; i < num_arguments; i++){
+                arguments[i] = calloc(token_size,sizeof(char));
+            }
 
+            int c = 0;
+            int arg = 0;
+            int arg_count = 0;
 
+            while (input[c] != '\n'){
+                if (input[c] == ' '){
+                    arguments[arg][arg_count] = '\0';
+                    arg++;
+                    arg_count = 0;
+                }
+                else{
+                    arguments[arg][arg_count] = input[c];
+                    arg_count++;
+                }
+                c++;
+            }
+            arguments[arg][arg_count] = '\0';
+        }
+        
 
+        
 
         struct dirent * file;
         int end = 0;
         int is_executable = 0;
         int found = 0;
         int is_cd = 0;
-        int run_in_back = 0;
+        
+        char* looking_for_this_command = arguments[0];
         printf("COMMAND: %s\n", arguments[0]);
 
 
@@ -157,7 +214,7 @@ int main() {
 
                 // printf("file: %s\n",file->d_name);
                 // printf("%d\n",rc);
-                if (strcmp(file->d_name, arguments[0]) == 0){
+                if (strcmp(file->d_name, looking_for_this_command) == 0){
                     printf("file: %s\n",file->d_name);
                     struct stat buf;
                     int rc = lstat(path, &buf);
@@ -165,11 +222,8 @@ int main() {
                         if (buf.st_mode & S_IXUSR) {
                             
                             found = 1;
-                            if (strcmp("cd", arguments[0]) == 0){
+                            if (strcmp("cd", looking_for_this_command) == 0){
                                 is_cd = 1;
-                            }
-                            else if (strcmp( arguments[num_arguments-1],"&") == 0){
-                                run_in_back = 1;
                             }
                             else{
                                 is_executable = 1;
