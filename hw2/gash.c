@@ -568,19 +568,19 @@ int main() {
             }
             arguments[arg][arg_count] = '\0';
 
-            struct dirent * file;
-            int end = 0;
+            // struct dirent * file;
+            // int end = 0;
             int is_executable = 0;
             int found = 0;
             int is_cd = 0;
-            char* argpath;
+            // char* argpath;
             
-            char* looking_for_this_command = arguments[0];
+            // char* looking_for_this_command = arguments[0];
             // printf("COMMAND: %s\n", arguments[0]);
 
             char *path = calloc(cache_size,sizeof(char));
             for(int d = 0; d < num_directories+1; d++){
-                DIR* dir = opendir( directories[d]);
+                // DIR* dir = opendir( directories[d]);
                 path = realloc(path, cache_size*sizeof(char)); 
 
                 
@@ -667,7 +667,7 @@ int main() {
                     // }
                 }
                 else {
-                    int result = execv(argpath,arguments);
+                    int result = execv(path,arguments);
                     if (result == -1){
                         perror("This program cannot run\n");
                         return EXIT_FAILURE;
@@ -707,7 +707,7 @@ int main() {
                 }
                 else {
                     
-                    int result = execv(argpath,arguments);
+                    int result = execv(path,arguments);
                     if (result == -1){
                         perror("This program cannot run\n");
                         return EXIT_FAILURE;
@@ -738,11 +738,11 @@ int main() {
             }
                 
                 
-            
+            free(path);
             
 
         
-            free(argpath);
+            // free(argpath);
         }
         
         if (ispipe){
