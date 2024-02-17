@@ -329,7 +329,7 @@ int main() {
                     close(pipefd[0]);
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
-                    sleep(1);
+
                     int result = execv(path1,arguments);
 
                     printf("result 1: %d\n", result);
@@ -358,7 +358,7 @@ int main() {
                     close(pipefd[1]);
                     dup2(pipefd[0], STDIN_FILENO);
                     close(pipefd[0]);
-                    sleep(1);
+
                     int result = execv(path2,arguments2);
                     
                     printf("result 2: %d\n", result);
@@ -432,7 +432,7 @@ int main() {
                     close(pipefd[0]);
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
-                    sleep(1);
+
                     int result = execv(path1,arguments);
 
                     printf("result 1: %d\n", result);
@@ -461,7 +461,7 @@ int main() {
                     close(pipefd[1]);
                     dup2(pipefd[0], STDIN_FILENO);
                     close(pipefd[0]);
-                    sleep(1);
+
                     int result = execv(path2,arguments2);
                     
                     printf("result 2: %d\n", result);
@@ -585,7 +585,7 @@ int main() {
                 {   
                     struct stat buf;
                     lstat(file->d_name, &buf);
-                    char* path = realloc(cache_size,sizeof(char)); 
+                    path = realloc(path, cache_size*sizeof(char)); 
 
 
                     snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
