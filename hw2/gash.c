@@ -576,6 +576,7 @@ int main() {
             int is_cd = 0;
             if (strcmp("cd",arguments[0]) == 0){
                 is_cd = 1;
+                found = 1;
             } 
             
             // char* argpath;
