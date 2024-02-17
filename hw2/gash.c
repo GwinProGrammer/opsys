@@ -172,131 +172,65 @@ int main() {
 
             arguments2[arg][arg_count] = '\0';
 
-            struct dirent * file;
-            int end = 0;
+            // struct dirent * file;
+            // int end = 0;
             int p1is_executable = 0;
             int p1found = 0;
             // int is_cd = 0;
 
-            char* path1;
-            char* path2;
+            char* path1 = calloc(cache_size,sizeof(char));
+            char* path2 = calloc(cache_size,sizeof(char));
             
-
-            // printf("COMMAND 1: %s\n", arguments[0]);
-            // printf("COMMAND 2: %s\n", arguments2[0]);
 
             //ARG1
             for(int d = 0; d < num_directories+1; d++){
-                DIR* dir = opendir( directories[d]);
+                // DIR* dir = opendir( directories[d]);
                 // printf("%s\n",directories[d]);
-                while ( ( file = readdir( dir ) ) != NULL )
-                {   
-                    struct stat buf;
-                    // int rc = lstat(file->d_name, &buf);
-                    lstat(file->d_name, &buf);
-                  
-                    char* path = calloc(cache_size,sizeof(char)); 
 
 
-                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+                path1 = realloc(path1, cache_size*sizeof(char)); 
+                snprintf(path1, cache_size*sizeof(char), "%s/%s", directories[d],arguments[0]);
+                struct stat buf;
 
-                    // printf("file: %s\n",file->d_name);
-                    // printf("%d\n",rc);
-                    if (strcmp(file->d_name, arguments[0]) == 0){
-                        // printf("file: %s\n",file->d_name);
-                        struct stat buf;
-                        int rc = lstat(path, &buf);
-                        if (rc != -1) {
-                            if (buf.st_mode & S_IXUSR) {
-                                
-                                p1found++;
-                                // if (strcmp("cd", looking_for_this_command) == 0){
-                                //     is_cd = 1;
-                                // }
-                                // else{
-                                //     is_executable = 1;
-                                // }
-                                p1is_executable++;
-                                // free(arguments[0]);
-                                
-                                // arguments[0] = path;
-                                path1 = path;
-                                
-                            } else {
-                                printf("/bin/%s exists but is not executable\n",file->d_name);
-                            }
-                            
-                        } else {
-                        perror("lstat() failed");
-                        return EXIT_FAILURE;
-                        }
-                        end = 1;
+                if (lstat(path1,&buf) != -1){
+                    p1found = 1;
+                    p1is_executable = ((buf.st_mode & S_IXUSR) != 0);
+                    if (p1is_executable){
                         break;
-                    } 
+                    }
                 }
-                closedir(dir);
-                if (end != 0) break;
+
             }
 
-            end = 0;
+            
             int p2is_executable = 0;
             int p2found = 0;
             //ARG2
-            for(int d = 0; d < num_directories+1; d++){ 
-                DIR* dir = opendir( directories[d]);
+            for(int d = 0; d < num_directories+1; d++){
+                // DIR* dir = opendir( directories[d]);
                 // printf("%s\n",directories[d]);
-                while ( ( file = readdir( dir ) ) != NULL )
-                {   
-                    struct stat buf;
-                    lstat(file->d_name, &buf);
-                    char* path = calloc(cache_size,sizeof(char)); 
 
 
-                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+                path2 = realloc(path2, cache_size*sizeof(char)); 
+                snprintf(path2, cache_size*sizeof(char), "%s/%s", directories[d],arguments2[0]);
+                struct stat buf;
 
-                    // printf("file: %s\n",file->d_name);
-                    // printf("%d\n",rc);
-                    if (strcmp(file->d_name, arguments2[0]) == 0){
-                        // printf("file: %s\n",file->d_name);
-                        struct stat buf;
-                        int rc = lstat(path, &buf);
-                        if (rc != -1) {
-                            if (buf.st_mode & S_IXUSR) {
-                                
-                                p2found++;
-                                // if (strcmp("cd", looking_for_this_command) == 0){
-                                //     is_cd = 1;
-                                // }
-                                // else{
-                                //     is_executable = 1;
-                                // }
-                                p2is_executable++;
-                                // free(arguments2[0]);
-                                
-                                // arguments2[0] = path;
-                                path2 = path;
-                                
-                            } else {
-                                printf("/bin/%s exists but is not executable\n",file->d_name);
-                            }
-                            
-                        } else {
-                        perror("lstat() failed");
-                        return EXIT_FAILURE;
-                        }
-                        end = 1;
+                if (lstat(path2,&buf) != -1){
+                    p2found = 1;
+                    p2is_executable = ((buf.st_mode & S_IXUSR) != 0);
+                    if (p2is_executable){
                         break;
-                    } 
+                    }
                 }
-                closedir(dir);
-                if (end != 0) break;
+
             }
+            
             if (!p1found || !p2found){
                 printf("ERROR: command \"%s\" not found", arguments[0]);
                 perror("Error:");
                 return EXIT_FAILURE;
             }
-
+            printf(":0(\n");
             if (p1is_executable && p2is_executable && !run_in_back){
 
                 int pipefd[2];
@@ -311,7 +245,7 @@ int main() {
                     perror("failed to pipe");
                     return EXIT_FAILURE;
                 }
-
+                
                 pid1 = fork();
 
                 if (pid1 == -1){
@@ -322,7 +256,6 @@ int main() {
 
                     // for(int i = 0; i < p1num_arguments; i++){
                     //     printf("%s ",arguments[i]);
-                    //     printf("%d",i);
                     // }
                     // printf("\n");
                     // printf("%s\n",path1);
@@ -330,16 +263,16 @@ int main() {
                     close(pipefd[0]);
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
-
+                    
                     int result = execv(path1,arguments);
-
+                    
                     printf("result 1: %d\n", result);
                     if (result == -1){
                         perror("Program 1 cannot run\n");
                         return EXIT_FAILURE;
                     }
                 }
-
+                
                 pid2 = fork();
 
                 if (pid2 == -1){
@@ -351,7 +284,6 @@ int main() {
 
                     // for(int i = 0; i < p2num_arguments; i++){
                     //     printf("%s ",arguments2[i]);
-                    //     printf("%d",i);
                     // }
                     // printf("\n");
                     // printf("%s\n",path2);
@@ -368,13 +300,15 @@ int main() {
                         return EXIT_FAILURE;
                     }
                 }
+                
                 close(pipefd[0]);
                 close(pipefd[1]);
+                printf(":(1\n");
                 waitpid(pid1, NULL, 0);
                 waitpid(pid2, NULL, 0);
                 
-                int status;
-                waitpid(rc, &status,0);   
+                // int status;
+                // waitpid(rc, &status,0);   
                 // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
                 // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
                 // {                             /*  by a signal (e.g., seg fault) */
@@ -399,6 +333,7 @@ int main() {
 
                 // printf("%d\n",rc);
             }
+            
 
             if (p1is_executable && p2is_executable && run_in_back){
                 int pipefd[2];
@@ -603,46 +538,6 @@ int main() {
                     }
                 }
 
-                // printf("%s\n",directories[d]);
-                // while ( ( file = readdir( dir ) ) != NULL )
-                // {   
-                //     struct stat buf;
-                //     lstat(file->d_name, &buf);
-                    
-
-                //     // printf("file: %s\n",file->d_name);
-                //     // printf("%d\n",rc);
-                //     if (strcmp(file->d_name, looking_for_this_command) == 0){
-                //         // printf("file: %s\n",file->d_name);
-                //         struct stat buf;
-                //         int rc = lstat(path, &buf);
-                //         if (rc != -1) {
-                //             if (buf.st_mode & S_IXUSR) {
-                                
-                //                 found = 1;
-                //                 if (strcmp("cd", looking_for_this_command) == 0){
-                //                     is_cd = 1;
-                //                 }
-                //                 else{
-                //                     is_executable = 1;
-                //                 }
-                                
-                //                 argpath = path;
-                                
-                //             } else {
-                //                 printf("/bin/%s exists but is not executable\n",file->d_name);
-                //             }
-                            
-                //         } else {
-                //         perror("lstat() failed");
-                //         return EXIT_FAILURE;
-                //         }
-                //         end = 1;
-                //         break;
-                //     } 
-                // }
-                // closedir(dir);
-                // if (end != 0) break;
             }
             if (!found){
                 fprintf(stderr,"ERROR: command \"%s\" not found\n", arguments[0]);
