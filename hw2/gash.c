@@ -297,7 +297,7 @@ int main() {
             }
 
             if (p1is_executable && p2is_executable && !run_in_back){
-                // int* pipefd = calloc(2,sizeof(int));
+
                 int pipefd[2];
                 pid_t pid1;
                 pid_t pid2;
@@ -535,14 +535,9 @@ int main() {
                 
                 
             
-            
+            free(path1);
+            free(path2);
 
-        
-            for (int k = 0; k < num_arguments; k++){
-                // printf("%s-", *(arguments+k));
-                free(*(arguments+k));
-            }
-            free(arguments);
             
         }
         else{ //not pipe
@@ -720,10 +715,11 @@ int main() {
                         return EXIT_FAILURE;
                     }
                 }
-                    else{
+                else{
                     char* new_path = calloc(cache_size,sizeof(char)); 
                     snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
                     chdir(new_path);
+                    free(new_path);
                 }
             }
                 
@@ -732,29 +728,41 @@ int main() {
             
 
         
-            for (int k = 0; k < num_arguments; k++){
-                // printf("%s-", *(arguments+k));
-                free(*(arguments+k));
+            free(argpath);
+        }
+        
+        if (ispipe){
+            for (int i = 0; i < p1num_arguments; i++){
+                free(arguments[i]);
+            }
+            arguments[p1num_arguments] = NULL;
+            for (int i = 0; i < p2num_arguments; i++){
+                free(arguments2[i]);
+            }
+            free(arguments);
+            free(arguments2);
+
+        }
+        else{
+            for (int i = 0; i < num_arguments+1; i++){
+                free(arguments[i]);
             }
             free(arguments);
         }
-        
-
-        
 
         
 
         
        
 
-        
+        free(input);
     }
-    // free(input);
+    
 
     for (int i = 0; i < num_directories+1; i++){
         free(directories[i]);
-        directories[i] = calloc(token_size,sizeof(char));
     }
+    free(directories);
     printf("bye\n");
     
     
