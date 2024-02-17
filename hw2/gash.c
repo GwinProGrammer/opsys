@@ -101,27 +101,29 @@ int main() {
                 run_in_back = 1;
             }
             if (input[i] == '|'){
-                ispipe = 1;
+                ispipe = 1; 
                 p1num_arguments = num_arguments -1;
             }
         }
 
-        printf("%d\n", p1num_arguments);
-        printf("%d\n", p2num_arguments);
+        // printf("%d\n", p1num_arguments);
+        // printf("%d\n", p2num_arguments);
 
         char **arguments;
         char **arguments2;
 
         if (ispipe){ //pipe
-            arguments = calloc(p1num_arguments,sizeof(char*));
-            arguments2 = calloc(p2num_arguments,sizeof(char*));
+            arguments = calloc(p1num_arguments+1,sizeof(char*));
+            arguments2 = calloc(p2num_arguments+1,sizeof(char*));
 
             for (int i = 0; i < p1num_arguments; i++){
                 arguments[i] = calloc(token_size,sizeof(char));
             }
+            arguments[p1num_arguments] = NULL;
             for (int i = 0; i < p2num_arguments; i++){
                 arguments2[i] = calloc(token_size,sizeof(char));
             }
+            arguments2[p2num_arguments] = NULL;
 
             int c = 0;
             int arg = 0;
@@ -160,13 +162,305 @@ int main() {
             }
 
             arguments2[arg][arg_count] = '\0';
+
+            struct dirent * file;
+            int end = 0;
+            int p1is_executable = 0;
+            int p1found = 0;
+            // int is_cd = 0;
+
+            char* path1;
+            char* path2;
+            
+            char* looking_for_this_command = arguments[0];
+            // printf("COMMAND 1: %s\n", arguments[0]);
+            // printf("COMMAND 2: %s\n", arguments2[0]);
+
+            //ARG1
+            for(int d = 0; d < num_directories+1; d++){
+                DIR* dir = opendir( directories[d]);
+                // printf("%s\n",directories[d]);
+                while ( ( file = readdir( dir ) ) != NULL )
+                {   
+                    struct stat buf;
+                    int rc = lstat(file->d_name, &buf);
+                    char* path = calloc(cache_size,sizeof(char)); 
+
+
+                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+
+                    // printf("file: %s\n",file->d_name);
+                    // printf("%d\n",rc);
+                    if (strcmp(file->d_name, arguments[0]) == 0){
+                        // printf("file: %s\n",file->d_name);
+                        struct stat buf;
+                        int rc = lstat(path, &buf);
+                        if (rc != -1) {
+                            if (buf.st_mode & S_IXUSR) {
+                                
+                                p1found++;
+                                // if (strcmp("cd", looking_for_this_command) == 0){
+                                //     is_cd = 1;
+                                // }
+                                // else{
+                                //     is_executable = 1;
+                                // }
+                                p1is_executable++;
+                                // free(arguments[0]);
+                                
+                                // arguments[0] = path;
+                                path1 = path;
+                                
+                            } else {
+                                printf("/bin/%s exists but is not executable\n",file->d_name);
+                            }
+                            
+                        } else {
+                        perror("lstat() failed");
+                        return EXIT_FAILURE;
+                        }
+                        end = 1;
+                        break;
+                    } 
+                }
+                closedir(dir);
+                if (end != 0) break;
+            }
+
+            end = 0;
+            int p2is_executable = 0;
+            int p2found = 0;
+            //ARG2
+            for(int d = 0; d < num_directories+1; d++){ 
+                DIR* dir = opendir( directories[d]);
+                // printf("%s\n",directories[d]);
+                while ( ( file = readdir( dir ) ) != NULL )
+                {   
+                    struct stat buf;
+                    int rc = lstat(file->d_name, &buf);
+                    char* path = calloc(cache_size,sizeof(char)); 
+
+
+                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+
+                    // printf("file: %s\n",file->d_name);
+                    // printf("%d\n",rc);
+                    if (strcmp(file->d_name, arguments2[0]) == 0){
+                        // printf("file: %s\n",file->d_name);
+                        struct stat buf;
+                        int rc = lstat(path, &buf);
+                        if (rc != -1) {
+                            if (buf.st_mode & S_IXUSR) {
+                                
+                                p2found++;
+                                // if (strcmp("cd", looking_for_this_command) == 0){
+                                //     is_cd = 1;
+                                // }
+                                // else{
+                                //     is_executable = 1;
+                                // }
+                                p2is_executable++;
+                                // free(arguments2[0]);
+                                
+                                // arguments2[0] = path;
+                                path2 = path;
+                                
+                            } else {
+                                printf("/bin/%s exists but is not executable\n",file->d_name);
+                            }
+                            
+                        } else {
+                        perror("lstat() failed");
+                        return EXIT_FAILURE;
+                        }
+                        end = 1;
+                        break;
+                    } 
+                }
+                closedir(dir);
+                if (end != 0) break;
+            }
+            if (!p1found || !p2found){
+                printf("ERROR: command \"%s\" not found", arguments[0]);
+                perror("Error:");
+            }
+
+            if (p1is_executable && p2is_executable){
+                // int* pipefd = calloc(2,sizeof(int));
+                int pipefd[2];
+                pid_t pid1;
+                pid_t pid2;
+                int rc;
+
+
+
+                rc = pipe(pipefd);
+                if (rc == -1){
+                    perror("failed to pipe");
+                    return EXIT_FAILURE;
+                }
+
+                pid1 = fork();
+
+                if (pid1 == -1){
+                    perror("Failed to fork ... ");
+                    return EXIT_FAILURE;
+                }
+                if (pid1 == 0){
+
+                    // for(int i = 0; i < p1num_arguments; i++){
+                    //     printf("%s ",arguments[i]);
+                    //     printf("%d",i);
+                    // }
+                    // printf("\n");
+                    // printf("%s\n",path1);
+                    
+                    close(pipefd[0]);
+                    dup2(pipefd[1], STDOUT_FILENO);
+                    close(pipefd[1]);
+                    
+                    int result = execve(path1,arguments,NULL);
+
+                    printf("result 1: %d\n", result);
+                    if (result == -1){
+                        perror("Program 1 cannot run\n");
+                        return EXIT_FAILURE;
+                    }
+                }
+
+                pid2 = fork();
+
+                if (pid2 == -1){
+                    perror("Failed to fork ... ");
+                    return EXIT_FAILURE;
+                }
+                if (pid2 == 0){
+                    // printf("2 is running\n");
+
+                    // for(int i = 0; i < p2num_arguments; i++){
+                    //     printf("%s ",arguments2[i]);
+                    //     printf("%d",i);
+                    // }
+                    // printf("\n");
+                    // printf("%s\n",path2);
+
+                    close(pipefd[1]);
+                    dup2(pipefd[0], STDIN_FILENO);
+                    close(pipefd[0]);
+                    
+                    int result = execve(path2,arguments2,NULL);
+                    
+                    printf("result 2: %d\n", result);
+                    if (result == -1){
+                        perror("Program 2 cannot run\n");
+                        return EXIT_FAILURE;
+                    }
+                }
+                close(pipefd[0]);
+                close(pipefd[1]);
+                waitpid(pid1, NULL, 0);
+                waitpid(pid2, NULL, 0);
+                
+                int status;
+                pid_t child_pid = waitpid(rc, &status,0);   
+                // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                {                             /*  by a signal (e.g., seg fault) */
+                    int exit_status = WTERMSIG( status );
+                    // printf("[process %d terminated abnormally]\n",  child_pid);
+                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                }
+                else if ( WIFEXITED( status ) )
+                {
+                    int exit_status = WEXITSTATUS( status );
+                    // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                }
+                
+                
+                // if (pid1 !=0 && pid2 != 0){
+                    
+                // }
+                // if (pid1 != 0 && pid2){
+                    
+                // }
+
+
+                // printf("%d\n",rc);
+            }
+
+            if (run_in_back){
+                pid_t rc;
+                rc = fork();
+
+                if (rc == -1){
+                    perror("Failed to fork ... ");
+                    return EXIT_FAILURE;
+                }
+                else if (rc != 0){
+                    int status;
+                    pid_t child_pid = waitpid(rc, &status,WNOHANG);
+
+                    // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                    // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                    // {                             /*  by a signal (e.g., seg fault) */
+                    //     int exit_status = WTERMSIG( status );
+                    //     printf("[process %d terminated abnormally]\n",  child_pid);
+                    //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    // }
+                    // else if ( WIFEXITED( status ) )
+                    // {
+                    //     int exit_status = WEXITSTATUS( status );
+                    //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                    // }
+                }
+                else {
+                    int result = execve(arguments[0],arguments,NULL);
+                    if (result == -1){
+                        perror("This program cannot run\n");
+                    }
+                }
+                
+                // printf("%d\n",rc);
+            }
+
+            // if (is_cd){
+            //     if (num_arguments == 1){
+            //         char *home_dir = getenv("HOME");
+            //         if (home_dir == NULL) {
+            //             fprintf(stderr, "No Home\n");
+            //             return EXIT_FAILURE;
+            //         }
+            //         if (chdir(home_dir) != 0) {
+            //             perror("chdir");
+            //             return EXIT_FAILURE;
+            //         }
+            //     }
+            //         else{
+            //         char* new_path = calloc(cache_size,sizeof(char)); 
+            //         snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
+            //         int result = chdir(new_path);
+            //     }
+            // }
+                
+                
+            
+            
+
+        
+            for (int k = 0; k < num_arguments; k++){
+                // printf("%s-", *(arguments+k));
+                free(*(arguments+k));
+            }
+            free(arguments);
             
         }
         else{ //not pipe
-            arguments = calloc(num_arguments,sizeof(char*));
+
+            arguments = calloc(num_arguments+1,sizeof(char*));
             for (int i = 0; i < num_arguments; i++){
                 arguments[i] = calloc(token_size,sizeof(char));
             }
+            arguments[num_arguments] = NULL;
 
             int c = 0;
             int arg = 0;
@@ -185,171 +479,173 @@ int main() {
                 c++;
             }
             arguments[arg][arg_count] = '\0';
-        }
-        
 
-        
-
-        struct dirent * file;
-        int end = 0;
-        int is_executable = 0;
-        int found = 0;
-        int is_cd = 0;
-        
-        char* looking_for_this_command = arguments[0];
-        printf("COMMAND: %s\n", arguments[0]);
+            struct dirent * file;
+            int end = 0;
+            int is_executable = 0;
+            int found = 0;
+            int is_cd = 0;
+            
+            char* looking_for_this_command = arguments[0];
+            // printf("COMMAND: %s\n", arguments[0]);
 
 
-        for(int d = 0; d < num_directories+1; d++){
-            DIR* dir = opendir( directories[d]);
-            printf("%s\n",directories[d]);
-            while ( ( file = readdir( dir ) ) != NULL )
-            {   
-                struct stat buf;
-                int rc = lstat(file->d_name, &buf);
-                char* path = calloc(cache_size,sizeof(char)); 
-
-
-                snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
-
-                // printf("file: %s\n",file->d_name);
-                // printf("%d\n",rc);
-                if (strcmp(file->d_name, looking_for_this_command) == 0){
-                    printf("file: %s\n",file->d_name);
+            for(int d = 0; d < num_directories+1; d++){
+                DIR* dir = opendir( directories[d]);
+                // printf("%s\n",directories[d]);
+                while ( ( file = readdir( dir ) ) != NULL )
+                {   
                     struct stat buf;
-                    int rc = lstat(path, &buf);
-                    if (rc != -1) {
-                        if (buf.st_mode & S_IXUSR) {
-                            
-                            found = 1;
-                            if (strcmp("cd", looking_for_this_command) == 0){
-                                is_cd = 1;
+                    int rc = lstat(file->d_name, &buf);
+                    char* path = calloc(cache_size,sizeof(char)); 
+
+
+                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+
+                    // printf("file: %s\n",file->d_name);
+                    // printf("%d\n",rc);
+                    if (strcmp(file->d_name, looking_for_this_command) == 0){
+                        // printf("file: %s\n",file->d_name);
+                        struct stat buf;
+                        int rc = lstat(path, &buf);
+                        if (rc != -1) {
+                            if (buf.st_mode & S_IXUSR) {
+                                
+                                found = 1;
+                                if (strcmp("cd", looking_for_this_command) == 0){
+                                    is_cd = 1;
+                                }
+                                else{
+                                    is_executable = 1;
+                                }
+                                free(arguments[0]);
+                                
+                                arguments[0] = path;
+                                
+                            } else {
+                                printf("/bin/%s exists but is not executable\n",file->d_name);
                             }
-                            else{
-                                is_executable = 1;
-                            }
-                            free(arguments[0]);
-                            
-                            arguments[0] = path;
                             
                         } else {
-                            printf("/bin/%s exists but is not executable\n",file->d_name);
+                        perror("lstat() failed");
+                        return EXIT_FAILURE;
                         }
-                        
-                    } else {
-                    perror("lstat() failed");
+                        end = 1;
+                        break;
+                    } 
+                }
+                closedir(dir);
+                if (end != 0) break;
+            }
+            if (!found){
+                printf("ERROR: command \"%s\" not found", arguments[0]);
+                perror("Error:");
+            }
+
+            if (is_executable){
+                pid_t rc;
+                rc = fork();
+
+                if (rc == -1){
+                    perror("Failed to fork ... ");
                     return EXIT_FAILURE;
+                }
+                else if (rc != 0){
+                    int status;
+                    pid_t child_pid = waitpid(rc, &status,0);   
+                    // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                    if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                    {                             /*  by a signal (e.g., seg fault) */
+                        int exit_status = WTERMSIG( status );
+                        // printf("[process %d terminated abnormally]\n",  child_pid);
+                        // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
                     }
-                    end = 1;
-                    break;
-                } 
-            }
-            closedir(dir);
-            if (end != 0) break;
-        }
-        if (!found){
-            printf("ERROR: command \"%s\" not found", arguments[0]);
-            perror("Error:");
-        }
-
-        if (is_executable){
-            pid_t rc;
-            rc = fork();
-
-            if (rc == -1){
-                perror("Failed to fork ... ");
-		        return EXIT_FAILURE;
-            }
-            else if (rc != 0){
-                int status;
-                pid_t child_pid = waitpid(rc, &status,0);   
-                // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status );
-                    // printf("[process %d terminated abnormally]\n",  child_pid);
-                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    else if ( WIFEXITED( status ) )
+                    {
+                        int exit_status = WEXITSTATUS( status );
+                        // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                    }
                 }
-                else if ( WIFEXITED( status ) )
-                {
-                    int exit_status = WEXITSTATUS( status );
-                    // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                else {
+                    int result = execve(arguments[0],arguments,NULL);
+                    if (result == -1){
+                        perror("This program cannot run\n");
+                    }
                 }
+                
+                // printf("%d\n",rc);
             }
-            else {
-                int result = execve(arguments[0],arguments,NULL);
-                if (result == -1){
-                    perror("This program cannot run\n");
-                }
-            }
-            
-            // printf("%d\n",rc);
-        }
 
-        if (run_in_back){
-            pid_t rc;
-            rc = fork();
+            if (run_in_back){
+                pid_t rc;
+                rc = fork();
 
-            if (rc == -1){
-                perror("Failed to fork ... ");
-		        return EXIT_FAILURE;
-            }
-            else if (rc != 0){
-                int status;
-                pid_t child_pid = waitpid(rc, &status,WNOHANG);
-
-                // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                // {                             /*  by a signal (e.g., seg fault) */
-                //     int exit_status = WTERMSIG( status );
-                //     printf("[process %d terminated abnormally]\n",  child_pid);
-                //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
-                // }
-                // else if ( WIFEXITED( status ) )
-                // {
-                //     int exit_status = WEXITSTATUS( status );
-                //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                // }
-            }
-            else {
-                int result = execve(arguments[0],arguments,NULL);
-                if (result == -1){
-                    perror("This program cannot run\n");
-                }
-            }
-            
-            // printf("%d\n",rc);
-        }
-
-        if (is_cd){
-            if (num_arguments == 1){
-                char *home_dir = getenv("HOME");
-                if (home_dir == NULL) {
-                    fprintf(stderr, "No Home\n");
+                if (rc == -1){
+                    perror("Failed to fork ... ");
                     return EXIT_FAILURE;
                 }
-                if (chdir(home_dir) != 0) {
-                    perror("chdir");
-                    return EXIT_FAILURE;
+                else if (rc != 0){
+                    int status;
+                    pid_t child_pid = waitpid(rc, &status,WNOHANG);
+
+                    // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                    // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                    // {                             /*  by a signal (e.g., seg fault) */
+                    //     int exit_status = WTERMSIG( status );
+                    //     printf("[process %d terminated abnormally]\n",  child_pid);
+                    //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    // }
+                    // else if ( WIFEXITED( status ) )
+                    // {
+                    //     int exit_status = WEXITSTATUS( status );
+                    //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                    // }
+                }
+                else {
+                    int result = execve(arguments[0],arguments,NULL);
+                    if (result == -1){
+                        perror("This program cannot run\n");
+                    }
+                }
+                
+                // printf("%d\n",rc);
+            }
+
+            if (is_cd){
+                if (num_arguments == 1){
+                    char *home_dir = getenv("HOME");
+                    if (home_dir == NULL) {
+                        fprintf(stderr, "No Home\n");
+                        return EXIT_FAILURE;
+                    }
+                    if (chdir(home_dir) != 0) {
+                        perror("chdir");
+                        return EXIT_FAILURE;
+                    }
+                }
+                    else{
+                    char* new_path = calloc(cache_size,sizeof(char)); 
+                    snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
+                    int result = chdir(new_path);
                 }
             }
-                else{
-                char* new_path = calloc(cache_size,sizeof(char)); 
-                snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
-                int result = chdir(new_path);
-            }
-        }
+                
+                
             
             
+
         
-         
-
-       
-        for (int k = 0; k < num_arguments; k++){
-            // printf("%s-", *(arguments+k));
-            free(*(arguments+k));
+            for (int k = 0; k < num_arguments; k++){
+                // printf("%s-", *(arguments+k));
+                free(*(arguments+k));
+            }
+            free(arguments);
         }
-        free(arguments);
+        
+
+        
+
+        
 
         
        
