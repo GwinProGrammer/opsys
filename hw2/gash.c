@@ -63,7 +63,7 @@ int main() {
         }
     }
     else{
-        strcpy(directories[0],"\\bin");
+        strcpy(directories[0],"/bin");
     }
     
 
