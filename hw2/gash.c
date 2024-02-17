@@ -301,7 +301,7 @@ int main() {
                 pid_t pid2;
                 int rc;
 
-
+                
 
                 rc = pipe(pipefd);
                 if (rc == -1){
@@ -403,7 +403,8 @@ int main() {
                 pid_t pid2;
                 int rc;
 
-
+                printf("[running background process \"%s\"]\n", arguments[0]);
+                printf("[running background process \"%s\"]\n", arguments2[0]);
 
                 rc = pipe(pipefd);
                 if (rc == -1){
@@ -472,21 +473,33 @@ int main() {
                 waitpid(pid1, NULL, WNOHANG);
                 waitpid(pid2, NULL, WNOHANG);
                 
-                int status;
-                pid_t child_pid = waitpid(rc, &status,0);   
+                int status1;
+                int status2;
+                pid_t child_pid1 = waitpid(pid1, &status1,0);   
+                pid_t child_pid2 = waitpid(pid1, &status2,0);   
                 // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                if ( WIFSIGNALED( status1 ) )  /* child process was terminated   */
                 {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status );
+                    int exit_status = WTERMSIG( status1 );
                     // printf("[process %d terminated abnormally]\n",  child_pid);
                     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
                 }
-                else if ( WIFEXITED( status ) )
+                else if ( WIFEXITED( status1 ) )
                 {
-                    int exit_status = WEXITSTATUS( status );
-                    // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                    int exit_status = WEXITSTATUS( status1 );
+                    printf("[process %d terminated with exit status %d]\n",  pid1, exit_status);
                 }
-                
+                if ( WIFSIGNALED( status2 ) )  /* child process was terminated   */
+                {                             /*  by a signal (e.g., seg fault) */
+                    int exit_status = WTERMSIG( status2 );
+                    // printf("[process %d terminated abnormally]\n",  child_pid);
+                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                }
+                else if ( WIFEXITED( status2 ) )
+                {
+                    int exit_status = WEXITSTATUS( status2 );
+                    printf("[process %d terminated with exit status %d]\n",  pid2, exit_status);
+                }
                 
                 // if (pid1 !=0 && pid2 != 0){
                     
@@ -615,11 +628,10 @@ int main() {
                 if (end != 0) break;
             }
             if (!found){
-                printf("ERROR: command \"%s\" not found", arguments[0]);
-                perror("Error:");
+                fprintf(stderr,"ERROR: command \"%s\" not found\n", arguments[0]);
             }
 
-            if (is_executable && run_in_back == 0){
+            if (is_executable && !run_in_back){
                 pid_t rc;
                 rc = fork();
 
@@ -655,7 +667,7 @@ int main() {
             }
 
 
-            if (run_in_back){
+            if (is_executable && run_in_back){
 
                 pid_t rc;
                 printf("[running background process \"%s\"]\n", arguments[0]);  
@@ -668,19 +680,19 @@ int main() {
                 else if (rc != 0){
                     int status;
                     pid_t child_pid = waitpid(rc, &status,WNOHANG);
-
-                    // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                    // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                    // {                             /*  by a signal (e.g., seg fault) */
-                    //     int exit_status = WTERMSIG( status );
-                    //     printf("[process %d terminated abnormally]\n",  child_pid);
-                    //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
-                    // }
-                    // else if ( WIFEXITED( status ) )
-                    // {
-                    //     int exit_status = WEXITSTATUS( status );
-                    //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                    // }
+                    printf("wifedited, %d\n", WIFEXITED( status ) );
+                    // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                    if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                    {                             /*  by a signal (e.g., seg fault) */
+                        int exit_status = WTERMSIG( status );
+                        printf("[process %d terminated abnormally]\n",  rc);
+                        // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    }
+                    else if ( WIFEXITED( status ) )
+                    {
+                        int exit_status = WEXITSTATUS( status );
+                        printf("[process %d terminated with exit status %d]\n",  rc, exit_status);
+                    }
                 }
                 else {
                     
