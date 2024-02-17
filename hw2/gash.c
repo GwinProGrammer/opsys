@@ -15,7 +15,7 @@ int main() {
     int cache_size = 1024;
     int token_size = 64;
 
-    
+
 
 
     char* env_value = getenv("MYPATH");
@@ -30,7 +30,7 @@ int main() {
         }
         e1++;
     }
-
+    
     char **directories = calloc(num_directories+1,sizeof(char*));
     for (int i = 0; i < num_directories+1; i++){
         directories[i] = calloc(token_size,sizeof(char));
@@ -54,7 +54,7 @@ int main() {
         e++;
     }
 
- 
+    
 
     int done = 0;
 
@@ -114,7 +114,7 @@ int main() {
                 p1num_arguments = num_arguments -1;
             }
         }
-
+        
         // printf("%d\n", p1num_arguments);
         // printf("%d\n", p2num_arguments);
 
@@ -572,7 +572,12 @@ int main() {
             // int end = 0;
             int is_executable = 0;
             int found = 0;
+
             int is_cd = 0;
+            if (strcmp("cd",arguments[0]) == 0){
+                is_cd = 1;
+            } 
+            
             // char* argpath;
             
             // char* looking_for_this_command = arguments[0];
@@ -642,7 +647,7 @@ int main() {
                 fprintf(stderr,"ERROR: command \"%s\" not found\n", arguments[0]);
             }
 
-            if (is_executable && !run_in_back){
+            if (is_executable && !run_in_back && !is_cd){
                 pid_t rc;
                 rc = fork();
 
@@ -678,7 +683,7 @@ int main() {
             }
 
 
-            if (is_executable && run_in_back){
+            if (is_executable && run_in_back && !is_cd){
 
                 pid_t rc;
                 printf("[running background process \"%s\"]\n", arguments[0]);  
