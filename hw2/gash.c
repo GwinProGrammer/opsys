@@ -230,7 +230,6 @@ int main() {
                 perror("Error:");
                 return EXIT_FAILURE;
             }
-            printf(":0(\n");
             if (p1is_executable && p2is_executable && !run_in_back){
 
                 int pipefd[2];
@@ -303,7 +302,6 @@ int main() {
                 
                 close(pipefd[0]);
                 close(pipefd[1]);
-                printf(":(1\n");
                 waitpid(pid1, NULL, 0);
                 waitpid(pid2, NULL, 0);
                 
@@ -592,7 +590,6 @@ int main() {
                 else if (rc != 0){
                     int status;
                     waitpid(rc, &status,WNOHANG);
-                    printf("wifedited, %d\n", WIFEXITED( status ) );
                     // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
                     if ( WIFSIGNALED( status ) )  /* child process was terminated   */
                     {                             /*  by a signal (e.g., seg fault) */
@@ -629,6 +626,12 @@ int main() {
                         perror("chdir");
                         return EXIT_FAILURE;
                     }
+                }
+                else if (strcmp(arguments[1],"/") == 0){
+                    char* new_path = calloc(cache_size,sizeof(char)); 
+                    snprintf(new_path, cache_size*sizeof(char), "%s",arguments[1]);
+                    chdir(new_path);
+                    free(new_path);
                 }
                 else{
                     char* new_path = calloc(cache_size,sizeof(char)); 
