@@ -66,7 +66,7 @@ int main() {
 
         if (getcwd(cwd, size) == NULL) {
             perror("getcwd");
-            return 1;
+            return EXIT_FAILURE;
         } 
         free(directories[num_directories]);
         directories[num_directories] = cwd;
@@ -98,7 +98,15 @@ int main() {
                 
             }
             if (input[i] == '&'){
+                input[i-1] = '\n';
                 run_in_back = 1;
+                if (ispipe){
+                    p2num_arguments--;
+                }
+                else{
+                    num_arguments--;
+                }
+                
             }
             if (input[i] == '|'){
                 ispipe = 1; 
@@ -283,9 +291,10 @@ int main() {
             if (!p1found || !p2found){
                 printf("ERROR: command \"%s\" not found", arguments[0]);
                 perror("Error:");
+                return EXIT_FAILURE;
             }
 
-            if (p1is_executable && p2is_executable){
+            if (p1is_executable && p2is_executable && !run_in_back){
                 // int* pipefd = calloc(2,sizeof(int));
                 int pipefd[2];
                 pid_t pid1;
@@ -318,7 +327,7 @@ int main() {
                     close(pipefd[0]);
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
-                    
+                    sleep(1);
                     int result = execve(path1,arguments,NULL);
 
                     printf("result 1: %d\n", result);
@@ -347,7 +356,7 @@ int main() {
                     close(pipefd[1]);
                     dup2(pipefd[0], STDIN_FILENO);
                     close(pipefd[0]);
-                    
+                    sleep(1);
                     int result = execve(path2,arguments2,NULL);
                     
                     printf("result 2: %d\n", result);
@@ -388,38 +397,105 @@ int main() {
                 // printf("%d\n",rc);
             }
 
-            if (run_in_back){
-                pid_t rc;
-                rc = fork();
+            if (p1is_executable && p2is_executable && run_in_back){
+                int pipefd[2];
+                pid_t pid1;
+                pid_t pid2;
+                int rc;
 
+
+
+                rc = pipe(pipefd);
                 if (rc == -1){
+                    perror("failed to pipe");
+                    return EXIT_FAILURE;
+                }
+
+                pid1 = fork();
+
+                if (pid1 == -1){
                     perror("Failed to fork ... ");
                     return EXIT_FAILURE;
                 }
-                else if (rc != 0){
-                    int status;
-                    pid_t child_pid = waitpid(rc, &status,WNOHANG);
+                if (pid1 == 0){
 
-                    // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                    // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                    // {                             /*  by a signal (e.g., seg fault) */
-                    //     int exit_status = WTERMSIG( status );
-                    //     printf("[process %d terminated abnormally]\n",  child_pid);
-                    //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    // for(int i = 0; i < p1num_arguments; i++){
+                    //     printf("%s ",arguments[i]);
+                    //     printf("%d",i);
                     // }
-                    // else if ( WIFEXITED( status ) )
-                    // {
-                    //     int exit_status = WEXITSTATUS( status );
-                    //     printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                    // }
-                }
-                else {
-                    int result = execve(arguments[0],arguments,NULL);
+                    // printf("\n");
+                    // printf("%s\n",path1);
+                    
+                    close(pipefd[0]);
+                    dup2(pipefd[1], STDOUT_FILENO);
+                    close(pipefd[1]);
+                    sleep(1);
+                    int result = execve(path1,arguments,NULL);
+
+                    printf("result 1: %d\n", result);
                     if (result == -1){
-                        perror("This program cannot run\n");
+                        perror("Program 1 cannot run\n");
+                        return EXIT_FAILURE;
                     }
                 }
+
+                pid2 = fork();
+
+                if (pid2 == -1){
+                    perror("Failed to fork ... ");
+                    return EXIT_FAILURE;
+                }
+                if (pid2 == 0){
+                    // printf("2 is running\n");
+
+                    // for(int i = 0; i < p2num_arguments; i++){
+                    //     printf("%s ",arguments2[i]);
+                    //     printf("%d",i);
+                    // }
+                    // printf("\n");
+                    // printf("%s\n",path2);
+
+                    close(pipefd[1]);
+                    dup2(pipefd[0], STDIN_FILENO);
+                    close(pipefd[0]);
+                    sleep(1);
+                    int result = execve(path2,arguments2,NULL);
+                    
+                    printf("result 2: %d\n", result);
+                    if (result == -1){
+                        perror("Program 2 cannot run\n");
+                        return EXIT_FAILURE;
+                    }
+                }
+                close(pipefd[0]);
+                close(pipefd[1]);
+                waitpid(pid1, NULL, WNOHANG);
+                waitpid(pid2, NULL, WNOHANG);
                 
+                int status;
+                pid_t child_pid = waitpid(rc, &status,0);   
+                // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                {                             /*  by a signal (e.g., seg fault) */
+                    int exit_status = WTERMSIG( status );
+                    // printf("[process %d terminated abnormally]\n",  child_pid);
+                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                }
+                else if ( WIFEXITED( status ) )
+                {
+                    int exit_status = WEXITSTATUS( status );
+                    // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                }
+                
+                
+                // if (pid1 !=0 && pid2 != 0){
+                    
+                // }
+                // if (pid1 != 0 && pid2){
+                    
+                // }
+
+
                 // printf("%d\n",rc);
             }
 
@@ -472,6 +548,7 @@ int main() {
                     arg++;
                     arg_count = 0;
                 }
+                
                 else{
                     arguments[arg][arg_count] = input[c];
                     arg_count++;
@@ -485,6 +562,7 @@ int main() {
             int is_executable = 0;
             int found = 0;
             int is_cd = 0;
+            char* argpath;
             
             char* looking_for_this_command = arguments[0];
             // printf("COMMAND: %s\n", arguments[0]);
@@ -518,9 +596,8 @@ int main() {
                                 else{
                                     is_executable = 1;
                                 }
-                                free(arguments[0]);
                                 
-                                arguments[0] = path;
+                                argpath = path;
                                 
                             } else {
                                 printf("/bin/%s exists but is not executable\n",file->d_name);
@@ -542,7 +619,7 @@ int main() {
                 perror("Error:");
             }
 
-            if (is_executable){
+            if (is_executable && run_in_back == 0){
                 pid_t rc;
                 rc = fork();
 
@@ -567,19 +644,23 @@ int main() {
                     }
                 }
                 else {
-                    int result = execve(arguments[0],arguments,NULL);
+                    int result = execve(argpath,arguments,NULL);
                     if (result == -1){
                         perror("This program cannot run\n");
+                        return EXIT_FAILURE;
                     }
                 }
                 
                 // printf("%d\n",rc);
             }
 
-            if (run_in_back){
-                pid_t rc;
-                rc = fork();
 
+            if (run_in_back){
+
+                pid_t rc;
+                printf("[running background process \"%s\"]\n", arguments[0]);  
+                rc = fork();
+                
                 if (rc == -1){
                     perror("Failed to fork ... ");
                     return EXIT_FAILURE;
@@ -602,9 +683,11 @@ int main() {
                     // }
                 }
                 else {
-                    int result = execve(arguments[0],arguments,NULL);
+                    
+                    int result = execve(argpath,arguments,NULL);
                     if (result == -1){
                         perror("This program cannot run\n");
+                        return EXIT_FAILURE;
                     }
                 }
                 
