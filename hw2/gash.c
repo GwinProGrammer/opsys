@@ -577,7 +577,7 @@ int main() {
             char* looking_for_this_command = arguments[0];
             // printf("COMMAND: %s\n", arguments[0]);
 
-
+            char *path = calloc(cache_size,sizeof(char));
             for(int d = 0; d < num_directories+1; d++){
                 DIR* dir = opendir( directories[d]);
                 // printf("%s\n",directories[d]);
@@ -585,7 +585,7 @@ int main() {
                 {   
                     struct stat buf;
                     lstat(file->d_name, &buf);
-                    char* path = calloc(cache_size,sizeof(char)); 
+                    char* path = realloc(cache_size,sizeof(char)); 
 
 
                     snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
