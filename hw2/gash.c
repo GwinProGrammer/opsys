@@ -78,6 +78,7 @@ int main() {
         // printf("%d",strcmp(input, "exit\n"));
         if (strcmp(input, "exit\n") == 0) {
             done = 1;
+            free(input);
             break;
         }
 
