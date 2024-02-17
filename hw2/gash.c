@@ -10,7 +10,7 @@
 
 int main() {
 
-    
+    setvbuf( stdout, NULL, _IONBF, 0 );
 
     int cache_size = 1024;
     int token_size = 64;
@@ -330,7 +330,7 @@ int main() {
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
                     sleep(1);
-                    int result = execve(path1,arguments,NULL);
+                    int result = execv(path1,arguments);
 
                     printf("result 1: %d\n", result);
                     if (result == -1){
@@ -359,7 +359,7 @@ int main() {
                     dup2(pipefd[0], STDIN_FILENO);
                     close(pipefd[0]);
                     sleep(1);
-                    int result = execve(path2,arguments2,NULL);
+                    int result = execv(path2,arguments2);
                     
                     printf("result 2: %d\n", result);
                     if (result == -1){
@@ -433,7 +433,7 @@ int main() {
                     dup2(pipefd[1], STDOUT_FILENO);
                     close(pipefd[1]);
                     sleep(1);
-                    int result = execve(path1,arguments,NULL);
+                    int result = execv(path1,arguments);
 
                     printf("result 1: %d\n", result);
                     if (result == -1){
@@ -462,7 +462,7 @@ int main() {
                     dup2(pipefd[0], STDIN_FILENO);
                     close(pipefd[0]);
                     sleep(1);
-                    int result = execve(path2,arguments2,NULL);
+                    int result = execv(path2,arguments2);
                     
                     printf("result 2: %d\n", result);
                     if (result == -1){
@@ -658,7 +658,7 @@ int main() {
                     // }
                 }
                 else {
-                    int result = execve(argpath,arguments,NULL);
+                    int result = execv(argpath,arguments);
                     if (result == -1){
                         perror("This program cannot run\n");
                         return EXIT_FAILURE;
@@ -698,7 +698,7 @@ int main() {
                 }
                 else {
                     
-                    int result = execve(argpath,arguments,NULL);
+                    int result = execv(argpath,arguments);
                     if (result == -1){
                         perror("This program cannot run\n");
                         return EXIT_FAILURE;
@@ -750,6 +750,11 @@ int main() {
         
     }
     // free(input);
+
+    for (int i = 0; i < num_directories+1; i++){
+        free(directories[i]);
+        directories[i] = calloc(token_size,sizeof(char));
+    }
     printf("bye\n");
     
     

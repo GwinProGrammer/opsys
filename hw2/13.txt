@@ -1,0 +1,5 @@
+/Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys/hw2$      1	cocoapuffs
+     2	cat -n hw2-input13.txt
+     3	cocoapuffs
+     4	exit
+/Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys/hw2$ bye

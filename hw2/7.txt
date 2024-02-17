@@ -1,0 +1,4 @@
+/Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/opsys/hw2
+/Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/opsys/hw2
+/Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys/hw2$ /Users/gwin/Documents/Opsys$ /Users/gwin/Documents/Opsys
+/Users/gwin/Documents/Opsys$ bye
