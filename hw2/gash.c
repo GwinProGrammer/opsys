@@ -180,7 +180,7 @@ int main() {
             char* path1;
             char* path2;
             
-            char* looking_for_this_command = arguments[0];
+
             // printf("COMMAND 1: %s\n", arguments[0]);
             // printf("COMMAND 2: %s\n", arguments2[0]);
 
@@ -191,7 +191,9 @@ int main() {
                 while ( ( file = readdir( dir ) ) != NULL )
                 {   
                     struct stat buf;
-                    int rc = lstat(file->d_name, &buf);
+                    // int rc = lstat(file->d_name, &buf);
+                    lstat(file->d_name, &buf);
+                  
                     char* path = calloc(cache_size,sizeof(char)); 
 
 
@@ -245,7 +247,7 @@ int main() {
                 while ( ( file = readdir( dir ) ) != NULL )
                 {   
                     struct stat buf;
-                    int rc = lstat(file->d_name, &buf);
+                    lstat(file->d_name, &buf);
                     char* path = calloc(cache_size,sizeof(char)); 
 
 
@@ -371,19 +373,19 @@ int main() {
                 waitpid(pid2, NULL, 0);
                 
                 int status;
-                pid_t child_pid = waitpid(rc, &status,0);   
-                // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status );
-                    // printf("[process %d terminated abnormally]\n",  child_pid);
-                    // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
-                }
-                else if ( WIFEXITED( status ) )
-                {
-                    int exit_status = WEXITSTATUS( status );
-                    // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                }
+                waitpid(rc, &status,0);   
+                // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                // {                             /*  by a signal (e.g., seg fault) */
+                //     int exit_status = WTERMSIG( status );
+                //     // printf("[process %d terminated abnormally]\n",  child_pid);
+                //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                // }
+                // else if ( WIFEXITED( status ) )
+                // {
+                //     int exit_status = WEXITSTATUS( status );
+                //     // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                // }
                 
                 
                 // if (pid1 !=0 && pid2 != 0){
@@ -475,13 +477,13 @@ int main() {
                 
                 int status1;
                 int status2;
-                pid_t child_pid1 = waitpid(pid1, &status1,0);   
-                pid_t child_pid2 = waitpid(pid1, &status2,0);   
+                waitpid(pid1, &status1,0);   
+                waitpid(pid1, &status2,0);   
                 // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
                 if ( WIFSIGNALED( status1 ) )  /* child process was terminated   */
                 {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status1 );
-                    // printf("[process %d terminated abnormally]\n",  child_pid);
+                    // int exit_status = WTERMSIG( status1 );
+                    printf("[process %d terminated abnormally]\n",  pid1);
                     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
                 }
                 else if ( WIFEXITED( status1 ) )
@@ -491,8 +493,8 @@ int main() {
                 }
                 if ( WIFSIGNALED( status2 ) )  /* child process was terminated   */
                 {                             /*  by a signal (e.g., seg fault) */
-                    int exit_status = WTERMSIG( status2 );
-                    // printf("[process %d terminated abnormally]\n",  child_pid);
+                    // int exit_status = WTERMSIG( status2 );
+                    printf("[process %d terminated abnormally]\n",  pid2);
                     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
                 }
                 else if ( WIFEXITED( status2 ) )
@@ -587,7 +589,7 @@ int main() {
                 while ( ( file = readdir( dir ) ) != NULL )
                 {   
                     struct stat buf;
-                    int rc = lstat(file->d_name, &buf);
+                    lstat(file->d_name, &buf);
                     char* path = calloc(cache_size,sizeof(char)); 
 
 
@@ -641,19 +643,19 @@ int main() {
                 }
                 else if (rc != 0){
                     int status;
-                    pid_t child_pid = waitpid(rc, &status,0);   
-                    // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
-                    if ( WIFSIGNALED( status ) )  /* child process was terminated   */
-                    {                             /*  by a signal (e.g., seg fault) */
-                        int exit_status = WTERMSIG( status );
-                        // printf("[process %d terminated abnormally]\n",  child_pid);
-                        // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
-                    }
-                    else if ( WIFEXITED( status ) )
-                    {
-                        int exit_status = WEXITSTATUS( status );
-                        // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
-                    }
+                    waitpid(rc, &status,0);   
+                    // // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
+                    // if ( WIFSIGNALED( status ) )  /* child process was terminated   */
+                    // {                             /*  by a signal (e.g., seg fault) */
+                    //     int exit_status = WTERMSIG( status );
+                    //     // printf("[process %d terminated abnormally]\n",  child_pid);
+                    //     // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
+                    // }
+                    // else if ( WIFEXITED( status ) )
+                    // {
+                    //     int exit_status = WEXITSTATUS( status );
+                    //     // printf("[process %d terminated with exit status %d]\n",  child_pid, exit_status);
+                    // }
                 }
                 else {
                     int result = execve(argpath,arguments,NULL);
@@ -679,12 +681,12 @@ int main() {
                 }
                 else if (rc != 0){
                     int status;
-                    pid_t child_pid = waitpid(rc, &status,WNOHANG);
+                    waitpid(rc, &status,WNOHANG);
                     printf("wifedited, %d\n", WIFEXITED( status ) );
                     // printf("%d: Child %d terminated. status 0x%x\n", getpid(), child_pid, status);   
                     if ( WIFSIGNALED( status ) )  /* child process was terminated   */
                     {                             /*  by a signal (e.g., seg fault) */
-                        int exit_status = WTERMSIG( status );
+                        // int exit_status = WTERMSIG( status );
                         printf("[process %d terminated abnormally]\n",  rc);
                         // printf( "PARENT: ...abnormally (killed by a signal) %d %s\n", exit_status, strsignal(exit_status) );
                     }
@@ -721,7 +723,7 @@ int main() {
                     else{
                     char* new_path = calloc(cache_size,sizeof(char)); 
                     snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
-                    int result = chdir(new_path);
+                    chdir(new_path);
                 }
             }
                 
