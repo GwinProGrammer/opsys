@@ -629,6 +629,8 @@ int main() {
             }
 
             if (is_cd){
+
+                
                 if (num_arguments == 1){
                     char *home_dir = getenv("HOME");
                     if (home_dir == NULL) {
@@ -647,10 +649,22 @@ int main() {
                     free(new_path);
                 }
                 else{
-                    char* new_path = calloc(cache_size,sizeof(char)); 
-                    snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
-                    chdir(new_path);
-                    free(new_path);
+                    int is_path = 0;
+                    const char* arg = arguments[1];
+                    while(*arg){
+                        if (*arg == '/') is_path = 1;
+                        arg++;
+                    }
+                    if (is_path){
+                        chdir(arguments[1]);
+                    }
+                    else{
+                        char* new_path = calloc(cache_size,sizeof(char)); 
+                        snprintf(new_path, cache_size*sizeof(char), "%s/%s", cwd,arguments[1]);
+                        chdir(new_path);
+                        free(new_path);
+                    }
+                    
                 }
             }
                 
