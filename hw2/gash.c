@@ -581,49 +581,62 @@ int main() {
             char *path = calloc(cache_size,sizeof(char));
             for(int d = 0; d < num_directories+1; d++){
                 DIR* dir = opendir( directories[d]);
-                // printf("%s\n",directories[d]);
-                while ( ( file = readdir( dir ) ) != NULL )
-                {   
-                    struct stat buf;
-                    lstat(file->d_name, &buf);
-                    path = realloc(path, cache_size*sizeof(char)); 
+                path = realloc(path, cache_size*sizeof(char)); 
 
+                
+                        
+                snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],arguments[0]);
 
-                    snprintf(path, cache_size*sizeof(char), "%s/%s", directories[d],file->d_name);
+                struct stat buf;
 
-                    // printf("file: %s\n",file->d_name);
-                    // printf("%d\n",rc);
-                    if (strcmp(file->d_name, looking_for_this_command) == 0){
-                        // printf("file: %s\n",file->d_name);
-                        struct stat buf;
-                        int rc = lstat(path, &buf);
-                        if (rc != -1) {
-                            if (buf.st_mode & S_IXUSR) {
-                                
-                                found = 1;
-                                if (strcmp("cd", looking_for_this_command) == 0){
-                                    is_cd = 1;
-                                }
-                                else{
-                                    is_executable = 1;
-                                }
-                                
-                                argpath = path;
-                                
-                            } else {
-                                printf("/bin/%s exists but is not executable\n",file->d_name);
-                            }
-                            
-                        } else {
-                        perror("lstat() failed");
-                        return EXIT_FAILURE;
-                        }
-                        end = 1;
+                if (lstat(path,&buf) != -1){
+                    found = 1;
+                    is_executable = ((buf.st_mode & S_IXUSR) != 0);
+                    if (is_executable){
                         break;
-                    } 
+                    }
                 }
-                closedir(dir);
-                if (end != 0) break;
+
+                // printf("%s\n",directories[d]);
+                // while ( ( file = readdir( dir ) ) != NULL )
+                // {   
+                //     struct stat buf;
+                //     lstat(file->d_name, &buf);
+                    
+
+                //     // printf("file: %s\n",file->d_name);
+                //     // printf("%d\n",rc);
+                //     if (strcmp(file->d_name, looking_for_this_command) == 0){
+                //         // printf("file: %s\n",file->d_name);
+                //         struct stat buf;
+                //         int rc = lstat(path, &buf);
+                //         if (rc != -1) {
+                //             if (buf.st_mode & S_IXUSR) {
+                                
+                //                 found = 1;
+                //                 if (strcmp("cd", looking_for_this_command) == 0){
+                //                     is_cd = 1;
+                //                 }
+                //                 else{
+                //                     is_executable = 1;
+                //                 }
+                                
+                //                 argpath = path;
+                                
+                //             } else {
+                //                 printf("/bin/%s exists but is not executable\n",file->d_name);
+                //             }
+                            
+                //         } else {
+                //         perror("lstat() failed");
+                //         return EXIT_FAILURE;
+                //         }
+                //         end = 1;
+                //         break;
+                //     } 
+                // }
+                // closedir(dir);
+                // if (end != 0) break;
             }
             if (!found){
                 fprintf(stderr,"ERROR: command \"%s\" not found\n", arguments[0]);
