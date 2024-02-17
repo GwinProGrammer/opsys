@@ -23,36 +23,49 @@ int main() {
     
 
     int num_directories = 0;
-    int e1 = 0;
-    while(env_value[e1] != '.'){
-        if (env_value[e1] == ':') {
-            num_directories++;
+    
+    if (env_value != NULL){
+        int e1 = 0;
+        while(env_value[e1] != '.'){
+            if (env_value[e1] == ':') {
+                num_directories++;
+            }
+            e1++;
         }
-        e1++;
     }
+    else{
+        num_directories = 1;
+    }
+    
+
     
     char **directories = calloc(num_directories+1,sizeof(char*));
     for (int i = 0; i < num_directories+1; i++){
         directories[i] = calloc(token_size,sizeof(char));
     }
     
-    
-    int e = 0;
-    int direct = 0;
-    int direct_count = 0;
-    while (env_value[e] != '.'){
-        
-        if (env_value[e] == ':'){
-            directories[direct][direct_count] = '\0';
-            direct++;
-            direct_count = 0;
+    if (env_value != NULL){
+        int e = 0;
+        int direct = 0;
+        int direct_count = 0;
+        while (env_value[e] != '.'){
+            
+            if (env_value[e] == ':'){
+                directories[direct][direct_count] = '\0';
+                direct++;
+                direct_count = 0;
+            }
+            else{
+                directories[direct][direct_count] = env_value[e];
+                direct_count++;
+            }
+            e++;
         }
-        else{
-            directories[direct][direct_count] = env_value[e];
-            direct_count++;
-        }
-        e++;
     }
+    else{
+        strcpy(directories[0],"\\bin");
+    }
+    
 
     
 
