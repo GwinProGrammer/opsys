@@ -7,8 +7,8 @@
 int ***dead_end_boards;
 int max_squares;
 size_t dead_end_boards_size = 2;
-int m = 5;
-int n = 5;
+int m = 3;
+int n = 3;
 int no_parallel = 1;
 
 typedef struct {
@@ -19,8 +19,8 @@ typedef struct {
 } shared_data;
 
 void print_board(int** board){
-    for (int i = 0; i < n; i++){
-        for(int j = 0; j < m; j++){
+    for (int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
             printf("%d",board[i][j]);
         }
         printf("\n");
@@ -31,9 +31,10 @@ int generate_knight(int** board, int x, int y, int moves[8][2]){
     
     int possible_moves = 0;
 
-    print_board(board);
+    // print_board(board);
+
     // printf("%d,%d\n",x,y);
-    printf("\n");
+    // printf("\n");
 
     if (x - 1 >= 0 && y - 2 >= 0 && board[x-1][y-2] == 0){
 
@@ -41,12 +42,17 @@ int generate_knight(int** board, int x, int y, int moves[8][2]){
         moves[possible_moves][1] = y-2;
         possible_moves++;
     }
+
+
     if (x - 2 >= 0 && y - 1 >= 0 && board[x-2][y-1] == 0){
 
         moves[possible_moves][0] = x-2;
         moves[possible_moves][1] = y-1;
         possible_moves++;
     }
+
+    
+
     if (x - 2 >= 0 && y +1 < n && board[x-2][y+1] == 0){
 
         moves[possible_moves][0] = x-2;
@@ -59,6 +65,9 @@ int generate_knight(int** board, int x, int y, int moves[8][2]){
         moves[possible_moves][1] = y+2;
         possible_moves++;
     }
+
+    
+
     if (x + 1 < m && y + 2 < n && board[x+1][y+2] == 0){
 
         moves[possible_moves][0] = x+1;
@@ -111,7 +120,12 @@ void free_moves(int** moves,int num_moves){
 
 void *tour(void *arg){
     shared_data *data = (shared_data *)arg;
-    printf("tour %d\n", data->moves_made);
+
+    pthread_t tid = pthread_self();
+    if (data->moves_made == 1){
+        printf("THREAD %lu: Solving Sonny's knight's tour problem for a %dx%d board\n",tid,m,n);
+    }
+    
     
     while(1){
         int moves[8][2];
@@ -131,17 +145,18 @@ void *tour(void *arg){
        
        else if (num_moves > 1){
 
-        printf("%d possible moves after move %d\n", num_moves,data->moves_made);
-        printf("starting from (%d,%d)\n", data->knight_x,data->knight_y);
+        printf("THREAD %lu: %d moves possible after move #%d; creating threads...\n", tid, num_moves,data->moves_made);
+        // printf("starting from (%d,%d)\n", data->knight_x,data->knight_y);
         //create new array to keep track of all the threads
         pthread_t threads[num_moves];
-        for(int i = 0; i < num_moves; i++){
-            int new_x = moves[i][0];
-            int new_y = moves[i][1];
-            printf("%d,%d\n",new_x,new_y);
-            print_board(data->board);
-            printf("\n");
-        }
+        // for(int i = 0; i < num_moves; i++){
+        //     int new_x = moves[i][0];
+        //     int new_y = moves[i][1];
+        //     printf("%d,%d\n",new_x,new_y);
+        //     print_board(data->board);
+        //     printf("\n");
+        // }
+        int return_values[num_moves];
 
         for(int i = 0; i < num_moves; i++){
 
@@ -164,16 +179,21 @@ void *tour(void *arg){
 
             // if noparalllel, wait for it HERE
             if(no_parallel){
-                pthread_join(threads[i], NULL);
-                printf("Thread %d has finished\n", i + 1);
+                void* result;
+                pthread_join(threads[i], &result);
+                return_values[i] = (int)result;
             }
         }
 
         if (!no_parallel){
             for (int i = 0; i < num_moves; i++) {
-                pthread_join(threads[i], NULL);
-                printf("Thread %d has finished\n", i + 1);
+                void* result;
+                pthread_join(threads[i], &result);
+                return_values[i] = (int)result;
             }
+        }
+        for (int i = 0; i < num_moves; i++) {
+                printf("THREAD %lu: Thread [%lu] joined (returned %d)\n", tid, threads[i], return_values[i]);
         }
         // free_moves(moves,num_moves);
         unsigned int *y = malloc(sizeof(*y));
@@ -181,26 +201,21 @@ void *tour(void *arg){
         pthread_exit(y);
        }
        else{
-        printf("dead end after move %d\n", data->moves_made);
-        if (data->moves_made == m*n){
-            printf("Full board!\n");
+        if (data->moves_made == m * n){
+            printf("THREAD %lu: Sonny found a full knight's tour!\n",tid);
         }
-        unsigned int *y = malloc(sizeof(*y));
-        *y = pthread_self();
-        pthread_exit(y);
+        else if (data->moves_made < m * n){
+            printf("THREAD %lu: Dead end after move #%d\n",tid,data->moves_made);
+        }
+        else{
+            perror("wtf\n");
+        }
+
+        pthread_exit((void*)(data->moves_made));
        }
     }
     
-    if (data->moves_made == m * n-1){
-        //full board
-    }
-    else if (data->moves_made < m * n-1){
-        //not full board
-        //resize dead_end_boards
-    }
-    else{
-        //wtf
-    }
+    
 
     //return num moves?
 }
