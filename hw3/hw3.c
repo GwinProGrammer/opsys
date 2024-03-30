@@ -9,7 +9,7 @@ int max_squares;
 size_t dead_end_boards_size = 2;
 int m = 3;
 int n = 3;
-int no_parallel = 0;
+int no_parallel = 1;
 
 typedef struct {
     int **board;
@@ -18,30 +18,42 @@ typedef struct {
     int moves_made;
 } shared_data;
 
+void print_board(int** board){
+    for (int i = 0; i < n; i++){
+        for(int j = 0; j < m; j++){
+            printf("%d",board[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 int generate_knight(int** board, int x, int y, int moves[8][2]){
     
     int possible_moves = 0;
 
+    print_board(board);
+    // printf("%d,%d\n",x,y);
+    printf("\n");
 
-    if (x - 1 > 0 && y - 2 > 0 && board[x-1][y-2] == 0){
+    if (x - 1 >= 0 && y - 2 >= 0 && board[x-1][y-2] == 0){
 
         moves[possible_moves][0] = x-1;
         moves[possible_moves][1] = y-2;
         possible_moves++;
     }
-    if (x - 2 > 0 && y - 1 > 0 && board[x-2][y-1] == 0){
+    if (x - 2 >= 0 && y - 1 >= 0 && board[x-2][y-1] == 0){
 
         moves[possible_moves][0] = x-2;
         moves[possible_moves][1] = y-1;
         possible_moves++;
     }
-    if (x - 2 > 0 && y +1 < n && board[x-2][y+1] == 0){
+    if (x - 2 >= 0 && y +1 < n && board[x-2][y+1] == 0){
 
         moves[possible_moves][0] = x-2;
         moves[possible_moves][1] = y+1;
         possible_moves++;
     }
-    if (x - 1 > 0 && y +1 < n && board[x-1][y+2] == 0){
+    if (x - 1 >= 0 && y +2 < n && board[x-1][y+2] == 0){
 
         moves[possible_moves][0] = x-1;
         moves[possible_moves][1] = y+2;
@@ -59,13 +71,13 @@ int generate_knight(int** board, int x, int y, int moves[8][2]){
         moves[possible_moves][1] = y+1;
         possible_moves++;
     }
-    if (x +2 < m && y - 1 > 0 && board[x+2][y-1] == 0){
+    if (x +2 < m && y - 1 >= 0 && board[x+2][y-1] == 0){
 
         moves[possible_moves][0] = x+2;
         moves[possible_moves][1] = y-1;
         possible_moves++;
     }
-    if (x + 1 < m && y - 2 > 0 && board[x+1][y-2] == 0){
+    if (x + 1 < m && y - 2 >= 0 && board[x+1][y-2] == 0){
 
         moves[possible_moves][0] = x+1;
         moves[possible_moves][1] = y-2;
@@ -95,6 +107,8 @@ void free_moves(int** moves,int num_moves){
     free(moves);
 }
 
+
+
 void *tour(void *arg){
     shared_data *data = (shared_data *)arg;
     printf("tour %d\n", data->moves_made);
@@ -102,9 +116,9 @@ void *tour(void *arg){
     while(1){
         int moves[8][2];
         int num_moves;
-        printf("gay4\n");
+
        num_moves = generate_knight(data->board,data->knight_x,data->knight_y,moves);
-        printf("gay5\n");
+
        if (num_moves == 1){
         int new_x = moves[0][0];
         int new_y = moves[0][1];
@@ -118,18 +132,27 @@ void *tour(void *arg){
        else if (num_moves > 1){
 
         printf("%d possible moves after move %d\n", num_moves,data->moves_made);
+        printf("starting from (%d,%d)\n", data->knight_x,data->knight_y);
         //create new array to keep track of all the threads
         pthread_t threads[num_moves];
+        for(int i = 0; i < num_moves; i++){
+            int new_x = moves[i][0];
+            int new_y = moves[i][1];
+            printf("%d,%d\n",new_x,new_y);
+            print_board(data->board);
+            printf("\n");
+        }
 
         for(int i = 0; i < num_moves; i++){
-            printf("gay6\n");
+
             int** new_board = copy_board(data->board);
-            printf("gay7\n");
+
             int new_x = moves[i][0];
-            printf("gay7.5\n");
+
             int new_y = moves[i][1];
-            printf("gay8\n");
+
             new_board[data->knight_x][data->knight_y] = 1;
+            new_board[new_x][new_y] = 1;
             shared_data *new_data = calloc(1,sizeof(shared_data));
             new_data->board = new_board;
             new_data->knight_x = new_x;
@@ -158,7 +181,7 @@ void *tour(void *arg){
         pthread_exit(y);
        }
        else{
-        printf("dead end\n");
+        printf("dead end after move %d\n", data->moves_made);
         unsigned int *y = malloc(sizeof(*y));
         *y = pthread_self();
         pthread_exit(y);
@@ -180,7 +203,7 @@ void *tour(void *arg){
 }
 
 int main() {
-    printf("start\n");
+
     int** new_board = calloc(m,sizeof(int*));
     for (int i = 0; i < m; i++){
         int* new_row = calloc(n, sizeof(int));
@@ -191,18 +214,18 @@ int main() {
     new_data->board = new_board;
     new_data->knight_x = 0;
     new_data->knight_y = 0;
-    new_data->moves_made=0;
+    new_data->moves_made=1;
 
-    printf("gay2\n");
+
 
     pthread_t thread;
     pthread_create(&thread, NULL, tour, (void*)new_data);
     
-    printf("gay3\n");
+
 
     pthread_join(thread, NULL);
     printf("Thread has finished\n");
-    printf("gay4\n");
+
 
     return(EXIT_SUCCESS);
 }
