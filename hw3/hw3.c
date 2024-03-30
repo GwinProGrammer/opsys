@@ -7,8 +7,8 @@
 int ***dead_end_boards;
 int max_squares;
 size_t dead_end_boards_size = 2;
-int m = 3;
-int n = 3;
+int m = 5;
+int n = 5;
 int no_parallel = 1;
 
 typedef struct {
@@ -182,6 +182,9 @@ void *tour(void *arg){
        }
        else{
         printf("dead end after move %d\n", data->moves_made);
+        if (data->moves_made == m*n){
+            printf("Full board!\n");
+        }
         unsigned int *y = malloc(sizeof(*y));
         *y = pthread_self();
         pthread_exit(y);
