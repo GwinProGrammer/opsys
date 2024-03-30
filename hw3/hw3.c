@@ -111,9 +111,13 @@ void *tour(void *arg){
         data->moves_made += 1;
         free_moves(moves,num_moves);
        }
-       
+
        else if (num_moves > 1){
+
+        printf("%d possible moves after move %d", num_moves,data->moves_made);
         //create new array to keep track of all the threads
+        pthread_t threads[num_moves];
+
         for(int i = 0; i < num_moves; i++){
             int** new_board = copy_board(data->board);
             int new_x = moves[i][0];
@@ -125,12 +129,24 @@ void *tour(void *arg){
             new_data->knight_y - new_y;
             new_data->moves_made = data->moves_made + 1;
             //create new thread
+            pthread_create(&threads[i], NULL, tour, (void*)new_data);
 
             // if noparalllel, wait for it HERE
+            if(no_parallel){
+                pthread_join(threads[i], NULL);
+                printf("Thread %d has finished\n", i + 1);
+            }
         }
+        if (!no_parallel){
+            for (int i = 0; i < num_moves; i++) {
+                pthread_join(threads[i], NULL);
+                printf("Thread %d has finished\n", i + 1);
+            }
+        }
+        free_moves(moves,num_moves);
        }
        else{
-        //end
+        printf("dead end\n");
        }
     }
     
@@ -148,7 +164,29 @@ void *tour(void *arg){
     //return num moves?
 }
 
+int main() {
+    int** new_board = calloc(m,sizeof(int*));
+    for (int i = 0; i < m; i++){
+        int* new_row = calloc(n, sizeof(int));
+        new_board[i] = new_row;
+    }
+    new_board[0][0] = 1;
+    shared_data *new_data = calloc(1,sizeof(shared_data));
+    new_data->board = new_board;
+    new_data->knight_x = 0;
+    new_data->knight_y = 0;
+    new_data->moves_made=0;
 
+    pthread_t thread;
+    pthread_create(&thread, NULL, tour, (void*)new_data);
+    
+    if(no_parallel){
+        pthread_join(thread, NULL);
+        printf("Thread has finished\n");
+    }
+
+    return(EXIT_FAILURE);
+}
 
 
 
