@@ -9,6 +9,7 @@ int max_squares;
 size_t dead_end_boards_size = 2;
 int m = 3;
 int n = 3;
+int no_parallel = 0;
 
 typedef struct {
     int **board;
@@ -74,69 +75,63 @@ int generate_knight(int** board, int x, int y, int** moves){
 }
 
 int** copy_board(int** board){
-    int 
 
+    int** new_board = calloc(m,sizeof(int*));
+    for (int i = 0; i < m; i++){
+        int* new_row = calloc(n, sizeof(int));
+        for(int j = 0; j < n; j++){
+            new_row[j] = board[i][j];
+        }
+        new_board[i] = new_row;
+    }
+    return new_board;
+}
+
+void free_moves(int** moves,int num_moves){
+    for (int i = 0; i < num_moves; i++){
+        free(moves[i]);
+    }
+    free(moves);
 }
 
 void *tour(void *arg){
     shared_data *data = (shared_data *)arg;
     
-
+    int** moves;
+    int num_moves;
     while(1){
-        int moves_made_now = 0;
+       num_moves = generate_knight(data->board,data->knight_x,data->knight_y,moves);
 
-        //move across by 1, up/down by 2
-        for (int i = -1; i < 2; i++){
-            for (int j = -2; j < 3; j += 2){
-                int x_ = data->knight_x + i;
-                int y_ = data->knight_y + j;
-                if (x_ < 0 || y_ < 0 || x_ >= m || y_ <= n){
-                    //invalid move
-                    continue;
-                }
-                else{
-                    if (data->board[x_][y_] != 1){
-                        if (moves_made_now > 0){
-                        //change the board state of the CURRENT thread
-                        data->moves_made++;
-                        }
-                        else{
-                            //create a new array with the board state changed
-                            //create a new thread and pass the new array to the thread
-                        }
-                        moves_made_now++;
-                    }
-                    
-                }
-            }
+       if (num_moves == 1){
+        int new_x = moves[0][0];
+        int new_y = moves[0][1];
+        data->board[new_x][new_y] = 1;
+        data->knight_x = new_x;
+        data->knight_y = new_y;
+        data->moves_made += 1;
+        free_moves(moves,num_moves);
+       }
+       
+       else if (num_moves > 1){
+        //create new array to keep track of all the threads
+        for(int i = 0; i < num_moves; i++){
+            int** new_board = copy_board(data->board);
+            int new_x = moves[i][0];
+            int new_y = moves[i][1];
+            new_board[data->knight_x][data->knight_y] = 1;
+            shared_data *new_data = calloc(1,sizeof(shared_data));
+            new_data->board = new_board;
+            new_data->knight_x = new_x;
+            new_data->knight_y - new_y;
+            new_data->moves_made = data->moves_made + 1;
+            //create new thread
+
+            // if noparalllel, wait for it HERE
         }
-        //move across by 2, up/down by 1
-        for (int i = -2; i < 3; i += 2){
-            for (int j = -1; j < 2; j ++){
-                int x_ = data->knight_x + i;
-                int y_ = data->knight_y + j;
-                if (x_ < 0 || y_ < 0 || x_ >= m || y_ <= n){
-                    //invalid move
-                    continue;
-                }
-                else{
-                    if (data->board[x_][y_] != 1){
-                        if (moves_made_now > 0){
-                            //change the board state of the CURRENT thread
-                            data->moves_made++;
-                        }
-                        else{
-                            //create a new array with the board state changed
-                            //create a new thread and pass the new array to the thread
-                        }
-                        moves_made_now++;
-                    }
-                }
-            }
-        }
-        if (moves_made_now == 0){
-            break;
-        }
+       }
+       else{
+        //end
+       }
     }
     
     if (data->moves_made == m * n-1){
