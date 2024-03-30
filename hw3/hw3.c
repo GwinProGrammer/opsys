@@ -17,6 +17,67 @@ typedef struct {
     int moves_made;
 } shared_data;
 
+int generate_knight(int** board, int x, int y, int** moves){
+    
+    int possible_moves = 0;
+    int** moves = calloc(8,sizeof(int*));
+
+    if (x - 1 > 0 && y - 2 > 0 && board[x-1][y-2] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x-1;
+        moves[possible_moves][1] = y-2;
+        possible_moves++;
+    }
+    if (x - 2 > 0 && y - 1 > 0 && board[x-2][y-1] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x-2;
+        moves[possible_moves][1] = y-1;
+        possible_moves++;
+    }
+    if (x - 2 > 0 && y +1 < n && board[x-2][y+1] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x-2;
+        moves[possible_moves][1] = y+1;
+        possible_moves++;
+    }
+    if (x - 1 > 0 && y +1 < n && board[x-1][y+2] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x-1;
+        moves[possible_moves][1] = y+2;
+        possible_moves++;
+    }
+    if (x + 1 < m && y + 2 < n && board[x+1][y+2] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x+1;
+        moves[possible_moves][1] = y+2;
+        possible_moves++;
+    }
+    if (x +2 < m && y +1 < n && board[x+2][y+1] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x+2;
+        moves[possible_moves][1] = y+1;
+        possible_moves++;
+    }
+    if (x +2 < m && y - 1 > 0 && board[x+2][y-1] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x+2;
+        moves[possible_moves][1] = y-1;
+        possible_moves++;
+    }
+    if (x + 1 < m && y - 2 > 0 && board[x+1][y-2] == 0){
+        moves[possible_moves] = calloc(2,sizeof(int));
+        moves[possible_moves][0] = x+1;
+        moves[possible_moves][1] = y-2;
+        possible_moves++;
+    }
+    return possible_moves;
+}
+
+int** copy_board(int** board){
+    int 
+
+}
+
 void *tour(void *arg){
     shared_data *data = (shared_data *)arg;
     
@@ -92,6 +153,10 @@ void *tour(void *arg){
     //return num moves?
 }
 
+
+
+
+
 /*main
  create array of every board that has ever been made    
  while (moves can still be made){
@@ -113,3 +178,14 @@ void *tour(void *arg){
  }
  free memory
 */ 
+
+/*
+
+we need to do these things
+- establish which moves are legal
+- get the number of legal moves
+- create a new board object for each legal move 
+- send each board object into a new thread
+- wait for all of these threads to finish
+
+*/
