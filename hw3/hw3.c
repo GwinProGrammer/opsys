@@ -4,12 +4,17 @@
 
 #include<pthread.h>
 
-#define NO_PARALLEL 0
+#ifdef NO_PARALLEL
+    #define NO_PARALLEL 1
+#else
+    #define NO_PARALLEL 0
+#endif
 
 int ***dead_end_boards = NULL;
 int max_squares;
 size_t dead_end_boards_size = 0;
 int num_dead_boards = 0;
+int dead_end_min = 0;
 int m;
 int n;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -155,7 +160,7 @@ void *tour(void *arg){
 
         pthread_t threads[num_moves];
    
-        int return_values[num_moves];
+        unsigned long return_values[num_moves];
 
         for(int i = 0; i < num_moves; i++){
 
@@ -177,7 +182,8 @@ void *tour(void *arg){
             #if NO_PARALLEL
                 void* result;
                 pthread_join(threads[i], &result);
-                return_values[i] = (int)result;
+                return_values[i] = (unsigned long)result;
+                printf("THREAD %lu: Thread [%lu] joined (returned %lu)\n", tid, (unsigned long)(void*)threads[i], return_values[i]);
             #endif
         }
 
@@ -186,20 +192,23 @@ void *tour(void *arg){
             for (int i = 0; i < num_moves; i++) {
                 void* result;
                 pthread_join(threads[i], &result);
-                return_values[i] = (int)result;
+                return_values[i] = (unsigned long)result;
             }
         #endif
-        int total = 0;
+        unsigned long max = 0;
         for (int i = 0; i < num_moves; i++) {
-            total += return_values[i];
-            printf("THREAD %lu: Thread [%lu] joined (returned %d)\n", tid, (unsigned long)(void*)threads[i], return_values[i]);
+            if (return_values[i] > max){
+                max = return_values[i];
+            }
+
+            // printf("THREAD %lu: Thread [%lu] joined (returned %lu)\n", tid, (unsigned long)(void*)threads[i], return_values[i]);
         }
 
         if(data->moves_made == 1){
             break;
         }
-        int* total_ptr = total;
-        pthread_exit((void*)(total_ptr));
+
+        pthread_exit((void*)(max));
        }
         // NO MORE MOVES
        else{ 
@@ -234,13 +243,23 @@ void *tour(void *arg){
         if(data->moves_made == 1){
             break;
         }
-        pthread_exit((void*)(data->moves_made));
+        unsigned long movesss = (unsigned long)(data->moves_made);
+        pthread_exit((void*)(movesss));
        }
     }
     printf("THREAD %lu: Best solution(s) found visit %d squares (out of %d)\n", tid,max_squares, m*n);
+    printf("THREAD %lu: Dead end boards:\n",tid);
     for(int k = 0; k < num_dead_boards; k++){
 
+        int cover_count = 0;
         for (int i = 0; i < m; i++){
+            for(int j = 0; j < n; j++){
+                cover_count += dead_end_boards[k][i][j];
+            }
+        }
+
+        if (cover_count >= dead_end_min){
+            for (int i = 0; i < m; i++){
             if (i == 0){
                 printf("THREAD %lu: > ", tid);
             }
@@ -258,15 +277,39 @@ void *tour(void *arg){
             }
             printf("\n");
         }
+        }
+
+        
     }
-    pthread_exit((void*)(data->moves_made));
+    int* return_ptr= &(data->moves_made);
+    pthread_exit((void*)(return_ptr));
 
 }
 
 int main(int argc, char *argv[]) {
 
+    if (argc < 3 || argc > 4){
+        fprintf(stderr,"ERROR: Invalid argument(s)\nUSAGE: a.out <m> <n> [<x>]\n");
+        return EXIT_FAILURE;
+    }
+    if (atoi(argv[1]) <= 2 || atoi(argv[2]) <= 2){
+        fprintf(stderr,"ERROR: Invalid argument(s)\nUSAGE: a.out <m> <n> [<x>]\n");
+        return EXIT_FAILURE;
+    }
+    if (argc  == 4){
+        if (atoi(argv[3]) > atoi(argv[1]) *  atoi(argv[2]) ){
+            fprintf(stderr,"ERROR: Invalid argument(s)\nUSAGE: a.out <m> <n> [<x>]\n");
+            return EXIT_FAILURE;
+        }
+    }
+    
+    
+
     m = atoi(argv[1]);
     n = atoi(argv[2]);
+    if (argc == 4){
+        dead_end_min = atoi(argv[3]);
+    }
 
 
     int** new_board = calloc(m,sizeof(int*));
