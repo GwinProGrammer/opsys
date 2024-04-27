@@ -60,6 +60,9 @@ int main() {
 
         // Receive data from server
         ssize_t bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        printf("bytes recieved: %zi\n", bytes_received);
+
         if (bytes_received == -1) {
             perror("Receive failed");
             exit(EXIT_FAILURE);
@@ -67,8 +70,8 @@ int main() {
             printf("Server closed connection\n");
             break;
         } else {
-            buffer[bytes_received] = '\0';
-            printf("Received from server: %s\n", buffer);
+            // buffer[bytes_received] = '\0';
+            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
         }
 
         // Sleep for some time before sending the next packet
@@ -85,6 +88,9 @@ int main() {
 
         // Receive data from server
         ssize_t bytes_received1 = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        printf("bytes recieved: %zi\n", bytes_received);
+
         if (bytes_received1 == -1) {
             perror("Receive failed");
             exit(EXIT_FAILURE);
@@ -92,8 +98,8 @@ int main() {
             printf("Server closed connection\n");
             break;
         } else {
-            buffer[bytes_received1] = '\0';
-            printf("Received from server: %s\n", buffer);
+            // buffer[bytes_received1] = '\0';
+            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
         }
 
         // Sleep for some time before sending the next packet
@@ -110,6 +116,9 @@ int main() {
 
         // Receive data from server
         ssize_t bytes_received2 = recv(client_socket, buffer, BUFFER_SIZE, 0);
+
+        printf("bytes recieved: %zi\n", bytes_received);
+
         if (bytes_received2 == -1) {
             perror("Receive failed");
             exit(EXIT_FAILURE);
@@ -117,8 +126,8 @@ int main() {
             printf("Server closed connection\n");
             break;
         } else {
-            buffer[bytes_received2] = '\0';
-            printf("Received from server: %s\n", buffer);
+            // buffer[bytes_received2] = '\0';
+            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
         }
 
         // Sleep for some time before sending the next packet

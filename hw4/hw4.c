@@ -90,8 +90,8 @@ void* wordle(void *arg){
     int num_guesses = 6;
     int newsd = *(int*)arg;
     printf("thread successfully created\n");
-    char buffer[MAXBUFFER + 1];
-    
+    char *buffer = (char *)calloc(6,sizeof(char));
+
     while(num_guesses > 0){
         int n = recv( newsd, buffer, MAXBUFFER, 0 );
         if ( n == -1 )
@@ -114,34 +114,44 @@ void* wordle(void *arg){
 
             int valid = is_valid(buffer);
 
+            char *send_buffer = (char *)calloc(8,sizeof(char));
+
             if (!valid){
                 printf("%s is not valid", buffer);
-                n = send( newsd, "?????\n", 5, 0 );
+                *send_buffer = 'N';
+                *(short*)(send_buffer + 1) = htons(num_guesses);
+                strncpy(send_buffer + 4, "?????\0", 5);
+                n = send( newsd, send_buffer, 8, 0 );
+                
             }
             else{
                 printf( "Word is valid\n" );
                 num_guesses--;
                 char* result = calculate_string(buffer,"rapid");
-                
                 if (result[5] == '1'){
                     result[5] = '\0';
                     num_guesses = 0;
                     printf("You got it!\n");
                 }
-                printf("sending %s\n", result);
-                n = send( newsd, result, 5, 0 );
+                *send_buffer = 'Y';
+                printf("guesses: %i\n", num_guesses);
+                *(short*)(send_buffer + 1) = htons((short)num_guesses);
+                strncpy(send_buffer + 4, result, 5);
+                unsigned short combined_short = (send_buffer[1] << 8) | send_buffer[2];
+                printf("sending %c%hd%c%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7],send_buffer[8]);
+                n = send( newsd, send_buffer, 8, 0 );
                 
             }
 
 
 
-
-            if ( n != 5 )
-            {
-                perror( "send() failed" );
-                pthread_exit(NULL);
-                // return EXIT_FAILURE;
-            }
+            printf("%i bytes sent\n", n);
+            // if ( n != 5 )
+            // {
+            //     perror( "send() failed" );
+            //     pthread_exit(NULL);
+            //     // return EXIT_FAILURE;
+            // }
         }
     }
     close(newsd);
