@@ -49,7 +49,7 @@ int main() {
     // Continuously send and receive data
     while (1) {
         // Generate a random packet
-        char packet[] = "print";
+        char packet[] = "print\0";
 
         // Send the packet
         if (send(client_socket, packet, strlen(packet), 0) == -1) {
@@ -74,7 +74,7 @@ int main() {
         // Sleep for some time before sending the next packet
         sleep(1);
 
-        char packet1[] = "rapid";
+        char packet1[] = "raven\0";
 
         // Send the packet
         if (send(client_socket, packet1, strlen(packet1), 0) == -1) {
@@ -99,7 +99,7 @@ int main() {
         // Sleep for some time before sending the next packet
         sleep(1);
 
-        char packet2[] = "raven";
+        char packet2[] = "rapid\0";
 
         // Send the packet
         if (send(client_socket, packet2, strlen(packet2), 0) == -1) {
@@ -110,7 +110,7 @@ int main() {
 
         // Receive data from server
         ssize_t bytes_received2 = recv(client_socket, buffer, BUFFER_SIZE, 0);
-        if (bytes_received == -1) {
+        if (bytes_received2 == -1) {
             perror("Receive failed");
             exit(EXIT_FAILURE);
         } else if (bytes_received2 == 0) {

@@ -13,7 +13,7 @@
 #define MAX_CLIENTS 5
 #define MAXBUFFER 8192
 
-#define MAX_LINES 1000
+#define MAX_LINES 6000
 #define MAX_LINE_LENGTH 100
 
 extern int total_guesses;
@@ -24,10 +24,18 @@ extern char ** words;
 char lines[MAX_LINES][MAX_LINE_LENGTH];
 int num_lines = 0;
 
+void toLowercase(char *str) {
+    while (*str) {
+        *str = tolower(*str);
+        str++;
+    }
+}
+
 int is_valid(char* word){
 
     for(int i = 0; i < num_lines; i++){
         int r = strcmp(lines[i],word);
+     
         if (r == 0){
             return 1;
         }
@@ -38,24 +46,36 @@ int is_valid(char* word){
 char* calculate_string(char* input, char* correct){
     char* in_ptr = input;
     char* cor_ptr = correct;
-    char* str = (char *)calloc(6, sizeof(char));
-    while(in_ptr){
+    char* result = (char *)calloc(6, sizeof(char));
+    char* str = result;
+    int stop = 0;
+    while(*in_ptr != '\0'){
         if (tolower(*in_ptr) == tolower(*cor_ptr)){
             *str = toupper(*in_ptr);
         }
         else {
-            for(char* ptr = correct; ptr; ptr++){
+            int elsewhere = 0;
+            for(char* ptr = correct; *ptr != '\0'; ptr++){
                 if (tolower(*in_ptr) == tolower(*ptr)){
                     *str = tolower(*in_ptr);
+                    elsewhere = 1;
                     break;
                 }
+            }
+            if (!elsewhere){
+                *str = '-';
             }
         }
         in_ptr++;
         cor_ptr++;
         str++;
+        stop++;
+        if (stop > 10){
+            break;
+        }
     }
-    return str;
+    *str = '\0';
+    return result;
 }
 
 void* wordle(void *arg){
@@ -83,13 +103,17 @@ void* wordle(void *arg){
             printf( "Rcvd message: %s\n",buffer );
 
             int valid = is_valid(buffer);
+
+            toLowercase(buffer);
+
             if (!valid){
+                printf("%s is not valid", buffer);
                 n = send( newsd, "?????\n", 5, 0 );
             }
             else{
                 printf( "Word is valid\n" );
                 num_guesses--;
-                char* result = calculate_string(buffer,"RAVEN");
+                char* result = calculate_string(buffer,"raven");
                 printf("sending %s\n", result);
                 n = send( newsd, result, 5, 0 );
             }
