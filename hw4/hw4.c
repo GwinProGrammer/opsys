@@ -34,7 +34,7 @@ int wordle_server(int argc, char **argv) {
     socklen_t length = sizeof(server);
 
     server.sin_family = AF_INET;
-    server.sin_port = htons(8123);
+    server.sin_port = htons(8192);
     server.sin_addr.s_addr = htonl( INADDR_ANY );
 
     if (bind(sd, (struct sockaddr *) &server, sizeof(server)) < 0)
