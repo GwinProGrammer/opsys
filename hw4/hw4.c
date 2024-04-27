@@ -46,12 +46,14 @@ int is_valid(char* word){
 char* calculate_string(char* input, char* correct){
     char* in_ptr = input;
     char* cor_ptr = correct;
-    char* result = (char *)calloc(6, sizeof(char));
+    char* result = (char *)calloc(7, sizeof(char));
     char* str = result;
+    int perfect = 0;
     int stop = 0;
     while(*in_ptr != '\0'){
         if (tolower(*in_ptr) == tolower(*cor_ptr)){
             *str = toupper(*in_ptr);
+            perfect++;
         }
         else {
             int elsewhere = 0;
@@ -74,6 +76,11 @@ char* calculate_string(char* input, char* correct){
             break;
         }
     }
+    *str = '\0';
+    if (perfect == 5){
+        *str = '1';
+    }
+    str++;
     *str = '\0';
     return result;
 }
@@ -102,9 +109,10 @@ void* wordle(void *arg){
 
             printf( "Rcvd message: %s\n",buffer );
 
-            int valid = is_valid(buffer);
 
             toLowercase(buffer);
+
+            int valid = is_valid(buffer);
 
             if (!valid){
                 printf("%s is not valid", buffer);
@@ -113,9 +121,16 @@ void* wordle(void *arg){
             else{
                 printf( "Word is valid\n" );
                 num_guesses--;
-                char* result = calculate_string(buffer,"raven");
+                char* result = calculate_string(buffer,"rapid");
+                
+                if (result[5] == '1'){
+                    result[5] = '\0';
+                    num_guesses = 0;
+                    printf("You got it!\n");
+                }
                 printf("sending %s\n", result);
                 n = send( newsd, result, 5, 0 );
+                
             }
 
 

@@ -74,7 +74,7 @@ int main() {
         // Sleep for some time before sending the next packet
         sleep(1);
 
-        char packet1[] = "raven\0";
+        char packet1[] = "raVen\0";
 
         // Send the packet
         if (send(client_socket, packet1, strlen(packet1), 0) == -1) {
@@ -99,7 +99,7 @@ int main() {
         // Sleep for some time before sending the next packet
         sleep(1);
 
-        char packet2[] = "rapid\0";
+        char packet2[] = "rapId\0";
 
         // Send the packet
         if (send(client_socket, packet2, strlen(packet2), 0) == -1) {
