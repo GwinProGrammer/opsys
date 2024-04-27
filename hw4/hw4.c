@@ -24,6 +24,16 @@ extern char ** words;
 char lines[MAX_LINES][MAX_LINE_LENGTH];
 int num_lines = 0;
 
+int sd;
+
+volatile sig_atomic_t end = 0;
+
+void sigusr1_handler(int signum) {
+    printf("damn signal recieved bro\n");
+    close(sd);
+    end = 1;
+}
+
 void toLowercase(char *str) {
     while (*str) {
         *str = tolower(*str);
@@ -162,6 +172,8 @@ void* wordle(void *arg){
 
 int wordle_server(int argc, char **argv) {
 
+    signal(SIGUSR1, sigusr1_handler);
+
     // do argument checking
 
     FILE *file = fopen("/Users/gwin/Documents/OpSys/hw4/wordle_words.txt", "r");
@@ -192,7 +204,7 @@ int wordle_server(int argc, char **argv) {
     
     //  struct hostent * hp = gethostbyname( "linux02.cs.rpi.edu" );
 
-    int sd = socket(AF_INET, SOCK_STREAM, 0);
+    sd = socket(AF_INET, SOCK_STREAM, 0);
     if (sd == -1)
     {
         perror("socket() failed: ");
@@ -231,7 +243,7 @@ int wordle_server(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    while(1){
+    while(!end){
         printf("hey\n");
         int newsd = accept(sd, (struct sockaddr *)&client, &length);
         if (newsd == -1) {
@@ -246,7 +258,7 @@ int wordle_server(int argc, char **argv) {
             close(newsd);
             continue;
         }
-
+        printf("go\n");
 
     }
     
