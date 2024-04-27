@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <ctype.h>
+#include <signal.h>
 
 #define MAX_CLIENTS 5
 #define MAXBUFFER 5
@@ -34,7 +35,7 @@ int sd;
 volatile sig_atomic_t end = 0;
 
 void sigusr1_handler(int signum) {
-    printf("damn signal recieved bro\n");
+    printf("MAIN: SIGUSR1 rcvd; Wordle server shutting down...\n");
     close(sd);
     end = 1;
 }
@@ -103,7 +104,9 @@ void* wordle(void *arg){
 
     int num_guesses = 6;
     int newsd = *(int*)arg;
-    printf("thread successfully created\n");
+    pthread_t tidd = pthread_self();
+    unsigned long tid = (unsigned long)tidd;
+    
     char *buffer = (char *)calloc(6,sizeof(char));
     // int i_ = rand() % (MAX_LINES); 
     // char* correct_word = lines[i_];
@@ -111,7 +114,7 @@ void* wordle(void *arg){
     int won = 0;
     while(num_guesses > 0){
 
-        
+        printf("THREAD %lu: waiting for guess\n", tid);
         int n = recv( newsd, buffer, MAXBUFFER, 0 );
 
         if ( n == -1 )
@@ -121,14 +124,12 @@ void* wordle(void *arg){
         }
         else if ( n == 0 )
         {
-            printf( "[%i]: Rcvd 0 from recv(); closing socket...\n", newsd );
+            printf( "%i: Rcvd 0 from recv(); closing socket...\n", newsd );
         }
         else /* n > 0 */
         {
             *(buffer+n) = '\0';   
-
-            printf( "Rcvd message: %s\n",buffer );
-
+            printf("THREAD %lu: rcvd guess: %s\n", tid, buffer);
 
             toLowercase(buffer);
 
@@ -137,26 +138,29 @@ void* wordle(void *arg){
             char *send_buffer = (char *)calloc(8,sizeof(char));
 
             if (!valid){
-                printf("%s is not valid", buffer);
+                // printf("%s is not valid", buffer);
                 *send_buffer = 'N';
                 *(short*)(send_buffer + 1) = htons(num_guesses);
-                strncpy(send_buffer + 3, "?????\0", 5);
+                strncpy(send_buffer + 3, "?????", 5);
+                printf("THREAD %lu: invalid guess; ????? (%i guesses left)\n", tid, num_guesses);
                 n = send( newsd, send_buffer, 8, 0 );
                 
             }
             else{
-                printf( "Word is valid\n" );
+                // printf( "Word is valid\n" );
                 num_guesses--;
                 char* result = calculate_string(buffer,"rapid");
                 if (*(result+5) == '1'){
-                    printf("You got it!\n");
+                    won = 1;
+                    *(result+5) = '\0';
+                    // printf("You got it!\n");
                 }
                 *send_buffer = 'Y';
-                printf("guesses: %i\n", num_guesses);
+                // printf("guesses: %i\n", num_guesses);
                 *(short*)(send_buffer + 1) = htons((short)num_guesses);
                 strncpy(send_buffer + 3, result, 5);
-                unsigned short combined_short = (*(send_buffer+1) << 8) | *(send_buffer+2);
-                printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
+                // unsigned short combined_short = (*(send_buffer+1) << 8) | *(send_buffer+2);
+                // printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
 
                 pthread_mutex_lock(&mutex);
@@ -169,8 +173,12 @@ void* wordle(void *arg){
                 }
                 pthread_mutex_unlock(&mutex);
 
-                if (*(result+5) == '1'){
-                    won = 1;
+                printf("THREAD %lu: sending reply: %s (%i guesses left)\n", tid, result, num_guesses);
+
+                if (won){
+                    
+                    printf("THREAD %lu: game over; word was %s!\n", tid, result);
+                    
                     break;
                 }
                 
@@ -178,7 +186,7 @@ void* wordle(void *arg){
 
 
 
-            printf("%i bytes sent\n", n);
+            // printf("%i bytes sent\n", n);
             // if ( n != 5 )
             // {
             //     perror( "send() failed" );
@@ -230,7 +238,7 @@ int wordle_server(int argc, char **argv) {
     char* filename = *(argv+3);
     num_words = atoi(*(argv+4));
 
-    printf("port: %i, seed: %i, filename: %s, numwords: %i\n", port, seed, filename, num_words);
+    // printf("port: %i, seed: %i, filename: %s, numwords: %i\n", port, seed, filename, num_words);
 
 
     FILE *file = fopen(filename, "r");
@@ -238,6 +246,9 @@ int wordle_server(int argc, char **argv) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
+
+    printf("MAIN: opened %s (%i words)\n", filename, num_words);
+    printf("MAIN: Wordle server listening on port  {%i}\n", port);
     
     lines = (char**)calloc(num_words, sizeof(char*));
 
@@ -270,7 +281,7 @@ int wordle_server(int argc, char **argv) {
         perror("socket() failed: ");
         return EXIT_FAILURE;
     }
-    printf("Socket: %d\n", sd);
+    // printf("Socket: %d\n", sd);
 
     struct sockaddr_in server;
     socklen_t length = sizeof(server);
@@ -284,9 +295,9 @@ int wordle_server(int argc, char **argv) {
         perror("bind() failed: ");
         return EXIT_FAILURE;
     }
-    printf("Bound to port %d\n", ntohs(server.sin_port));
+    // printf("Bound to port %d\n", ntohs(server.sin_port));
 
-    printf("Before getsockname() port %d\n", ntohs(server.sin_port));
+    // printf("Before getsockname() port %d\n", ntohs(server.sin_port));
     if (getsockname(sd, (struct sockaddr *) &server, &length) < 0)
     {
         perror("getsockname() failed: ");
@@ -296,7 +307,7 @@ int wordle_server(int argc, char **argv) {
     // int n;
     // char buffer[MAXBUFFER + 1];
     struct sockaddr_in client;
-    printf("listening...\n");
+    // printf("listening...\n");
     if (listen(sd, MAX_CLIENTS) < 0)
     {
         perror("listen() failed: ");
@@ -304,15 +315,17 @@ int wordle_server(int argc, char **argv) {
     }
 
     while(!end){
-        printf("hey\n");
+        
         int newsd = accept(sd, (struct sockaddr *)&client, &length);
+        
         if (newsd == -1) {
-            perror("Accept failed");
+            // perror("Accept failed");
             continue;
         }
-        printf("Accept accepted\n");
+        // printf("Accept accepted\n");
         pthread_t thread_id;
-        printf("%i\n", newsd);
+        printf("MAIN: rcvd incoming connection request\n");
+
         if (pthread_create(&thread_id, NULL, wordle, (void *)&newsd) != 0) {
             perror("Error creating thread");
             close(newsd);
@@ -325,14 +338,14 @@ int wordle_server(int argc, char **argv) {
         }
     }
     
-    printf("total guesses, wins, losses = %i, %i, %i\n", total_guesses, total_wins, total_losses);
-    printf("Total words used: \n");
+    // printf("total guesses, wins, losses = %i, %i, %i\n", total_guesses, total_wins, total_losses);
+    // printf("Total words used: \n");
 
-    char** ptr = words;
-    while (*ptr){
-        printf("%s\n", *ptr);
-        ptr++;
-    }
+    // char** ptr = words;
+    // while (*ptr){
+    //     printf("%s\n", *ptr);
+    //     ptr++;
+    // }
 
     return EXIT_SUCCESS;
 }   
