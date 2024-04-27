@@ -70,8 +70,10 @@ int main() {
             printf("Server closed connection\n");
             break;
         } else {
-            // buffer[bytes_received] = '\0';
-            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+            buffer[bytes_received] = '\0';
+            unsigned short combined_short = (buffer[1] << 8) | buffer[2];
+            printf("?: %c\n", buffer[3]);
+            printf("received %c%hd|%c|%c|%c|%c|%c|%c\n", buffer[0],combined_short,buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8]);
         }
 
         // Sleep for some time before sending the next packet
@@ -99,7 +101,9 @@ int main() {
             break;
         } else {
             // buffer[bytes_received1] = '\0';
-            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+            unsigned short combined_short = (buffer[1] << 8) | buffer[2];
+            printf("?: %c\n", buffer[3]);
+            printf("received %c%hd|%c|%c|%c|%c|%c|%c\n", buffer[0],combined_short,buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8]);
         }
 
         // Sleep for some time before sending the next packet
@@ -127,7 +131,9 @@ int main() {
             break;
         } else {
             // buffer[bytes_received2] = '\0';
-            printf("recieved %c%hd%c%c%c%c%c\n", buffer[0],buffer[1],buffer[3],buffer[4],buffer[5],buffer[6],buffer[7]);
+            unsigned short combined_short = (buffer[1] << 8) | buffer[2];
+            printf("?: %c\n", buffer[3]);
+            printf("received %c%hd|%c|%c|%c|%c|%c|%c\n", buffer[0],combined_short,buffer[3],buffer[4],buffer[5],buffer[6],buffer[7],buffer[8]);
         }
 
         // Sleep for some time before sending the next packet

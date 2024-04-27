@@ -13,7 +13,7 @@
 #define MAX_CLIENTS 5
 #define MAXBUFFER 8192
 
-#define MAX_LINES 6000
+#define MAX_LINES 5757
 #define MAX_LINE_LENGTH 100
 
 extern int total_guesses;
@@ -101,7 +101,10 @@ void* wordle(void *arg){
     int newsd = *(int*)arg;
     printf("thread successfully created\n");
     char *buffer = (char *)calloc(6,sizeof(char));
+    // int i_ = rand() % (MAX_LINES); 
+    // char* correct_word = lines[i_];
 
+    
     while(num_guesses > 0){
         int n = recv( newsd, buffer, MAXBUFFER, 0 );
         if ( n == -1 )
@@ -130,7 +133,7 @@ void* wordle(void *arg){
                 printf("%s is not valid", buffer);
                 *send_buffer = 'N';
                 *(short*)(send_buffer + 1) = htons(num_guesses);
-                strncpy(send_buffer + 4, "?????\0", 5);
+                strncpy(send_buffer + 3, "?????\0", 5);
                 n = send( newsd, send_buffer, 8, 0 );
                 
             }
@@ -139,17 +142,19 @@ void* wordle(void *arg){
                 num_guesses--;
                 char* result = calculate_string(buffer,"rapid");
                 if (result[5] == '1'){
-                    result[5] = '\0';
-                    num_guesses = 0;
                     printf("You got it!\n");
                 }
                 *send_buffer = 'Y';
                 printf("guesses: %i\n", num_guesses);
                 *(short*)(send_buffer + 1) = htons((short)num_guesses);
-                strncpy(send_buffer + 4, result, 5);
+                strncpy(send_buffer + 3, result, 5);
                 unsigned short combined_short = (send_buffer[1] << 8) | send_buffer[2];
-                printf("sending %c%hd%c%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7],send_buffer[8]);
+                printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
+                if (result[5] == '1'){
+
+                    break;
+                }
                 
             }
 
@@ -176,7 +181,17 @@ int wordle_server(int argc, char **argv) {
 
     // do argument checking
 
-    FILE *file = fopen("/Users/gwin/Documents/OpSys/hw4/wordle_words.txt", "r");
+    argv = (char**)argv;
+
+    int port = atoi(argv[1]);
+    unsigned int seed = (unsigned int)atoi(argv[2]);
+    char* filename = argv[3];
+    int num_words = atoi(argv[4]);
+
+    printf("port: %i, seed: %i, filename: %s, numwords: %i\n", port, seed, filename, num_words);
+
+
+    FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
@@ -184,12 +199,11 @@ int wordle_server(int argc, char **argv) {
     
 
     while (fgets(lines[num_lines], MAX_LINE_LENGTH, file) != NULL) {
-        // Remove newline character if present
+
         lines[num_lines][strcspn(lines[num_lines], "\n")] = '\0';
         num_lines++;
 
-        // Check if maximum number of lines has been reached
-        if (num_lines >= MAX_LINES) {
+        if (!(num_lines < num_words)) {
             printf("Maximum number of lines reached. Exiting.\n");
             break;
         }
@@ -197,10 +211,12 @@ int wordle_server(int argc, char **argv) {
 
     fclose(file);
 
-    printf("Contents of the file:\n");
-    for (int i = 0; i < num_lines; i++) {
-        printf("%s\n", lines[i]);
-    }
+    srand(seed);
+
+    // printf("Contents of the file:\n");
+    // for (int i = 0; i < num_lines; i++) {
+    //     printf("%s\n", lines[i]);
+    // }
     
     //  struct hostent * hp = gethostbyname( "linux02.cs.rpi.edu" );
 
