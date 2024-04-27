@@ -47,6 +47,13 @@ void toLowercase(char *str) {
     }
 }
 
+void toUppercase(char *str) {
+    while (*str) {
+        *str = toupper(*str);
+        str++;
+    }
+}
+
 int is_valid(char* word){
 
     for(int i = 0; i < num_words; i++){
@@ -124,8 +131,8 @@ void* wordle(void *arg){
         }
         else if ( n == 0 )
         {
-            printf( "%i: Rcvd 0 from recv(); closing socket...\n", newsd );
-            close(newsd);
+            printf( "client gave up; closing TCP connection...\n");
+            break;
         }
         else /* n > 0 */
         {
@@ -147,7 +154,13 @@ void* wordle(void *arg){
                 *(send_buffer + 5) = '?';
                 *(send_buffer + 6) = '?';
                 *(send_buffer + 7) = '?';
-                printf("THREAD %lu: invalid guess; ????? (%i guesses left)\n", tid, num_guesses);
+                if (num_guesses != 1){
+                    printf("THREAD %lu: invalid guess; sending reply: ????? (%i guesses left)\n", tid, num_guesses);
+                }
+                else {
+                    printf("THREAD %lu: invalid guess; sending reply: ????? (%i guess left)\n", tid, num_guesses);
+                }
+                
                 n = send( newsd, send_buffer, 8, 0 );
                 
             }
@@ -172,21 +185,18 @@ void* wordle(void *arg){
                 // printf("sending |%c|%hd|%c|%c|%c|%c|%c|\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
 
-                pthread_mutex_lock(&mutex);
-                *(words + word_size) = calloc(MAX_LINE_LENGTH, sizeof(char));
-                strncpy(*(words + word_size), buffer,6);
-                word_size++;
-                if (word_size > word_limit-1){
-                    word_limit *= 2;
-                    words = realloc(words, word_limit * sizeof(char *));
+                
+                if (num_guesses != 0){
+                    printf("THREAD %lu: sending reply: %s (%i guesses left)\n", tid, result, num_guesses);
                 }
-                pthread_mutex_unlock(&mutex);
-
-                printf("THREAD %lu: sending reply: %s (%i guesses left)\n", tid, result, num_guesses);
+                else{
+                    printf("THREAD %lu: sending reply: %s (%i guess left)\n", tid, result, num_guesses);
+                }
+                
 
                 if (won){
                     
-                    printf("THREAD %lu: game over; word was %s!\n", tid, result);
+                    
                     
                     break;
                 }
@@ -204,6 +214,7 @@ void* wordle(void *arg){
             // }
         }
     }
+    printf("THREAD %lu: game over; word was %s!\n", tid, correct_word);
 
     if (won){
         pthread_mutex_lock(&mutex);
@@ -217,6 +228,18 @@ void* wordle(void *arg){
         total_losses += 1;
         pthread_mutex_unlock(&mutex);
     }
+    pthread_mutex_lock(&mutex);
+    *(words + word_size) = calloc(MAX_LINE_LENGTH, sizeof(char));
+    for (char *ptr = correct_word; *ptr; ++ptr) {
+         *ptr = toupper(*ptr);
+    }
+    strncpy(*(words + word_size), correct_word,6);
+    word_size++;
+    if (word_size > word_limit-1){
+        word_limit *= 2;
+        words = realloc(words, word_limit * sizeof(char *));
+    }
+    pthread_mutex_unlock(&mutex);
 
     close(newsd);
     // free(arg);
@@ -257,7 +280,7 @@ int wordle_server(int argc, char **argv) {
     }
 
     printf("MAIN: opened %s (%i words)\n", filename, num_words);
-    printf("MAIN: Wordle server listening on port  {%i}\n", port);
+    printf("MAIN: Wordle server listening on port {%i}\n", port);
     
     lines = (char**)calloc(num_words, sizeof(char*));
 
