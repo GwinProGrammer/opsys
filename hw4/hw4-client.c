@@ -17,7 +17,8 @@ int main()
   int sd = socket( AF_INET, SOCK_STREAM, 0 );
   if ( sd == -1 ) { perror( "socket() failed" ); exit( EXIT_FAILURE ); }
 
-  struct hostent * hp = gethostbyname( "linux02.cs.rpi.edu" );
+  // struct hostent * hp = gethostbyname( "linux02.cs.rpi.edu" );
+  struct hostent * hp = gethostbyname( "127.0.0.1" );
 
 #if 0
   struct hostent * hp = gethostbyname( "128.113.126.39" );

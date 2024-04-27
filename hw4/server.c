@@ -5,15 +5,24 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
-#define PORT 12345
+#define PORT 8192
 #define BUFFER_SIZE 1024
 
 int main() {
     int server_socket, client_socket;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
+    
     char buffer[BUFFER_SIZE];
+
+    struct hostent * hp = gethostbyname( "127.0.0.1" );
+     if ( hp == NULL )
+        {
+            fprintf( stderr, "ERROR: gethostbyname() failed\n" ); 
+            return EXIT_FAILURE;
+        }
 
     // Create socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -24,7 +33,8 @@ int main() {
 
     // Initialize server address structure
     server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
+    // server_addr.sin_addr.s_addr = INADDR_ANY;
+    memcpy( (void *)&server_addr.sin_addr, (void *)hp->h_addr, hp->h_length );
     server_addr.sin_port = htons(PORT);
 
     // Bind socket to address
