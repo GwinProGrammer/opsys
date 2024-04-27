@@ -16,10 +16,14 @@
 // #define MAX_LINES 5757
 #define MAX_LINE_LENGTH 6
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 extern int total_guesses;
 extern int total_wins;
 extern int total_losses;
 extern char ** words;
+int word_size;
+int word_limit;
 
 char** lines;
 int num_words = 0;
@@ -104,9 +108,12 @@ void* wordle(void *arg){
     // int i_ = rand() % (MAX_LINES); 
     // char* correct_word = lines[i_];
 
-    
+    int won = 0;
     while(num_guesses > 0){
+
+        
         int n = recv( newsd, buffer, MAXBUFFER, 0 );
+
         if ( n == -1 )
         {
             perror( "recv() failed" );
@@ -151,8 +158,19 @@ void* wordle(void *arg){
                 unsigned short combined_short = (*(send_buffer+1) << 8) | *(send_buffer+2);
                 printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
-                if (*(result+5) == '1'){
 
+                pthread_mutex_lock(&mutex);
+                *(words + word_size) = calloc(MAX_LINE_LENGTH, sizeof(char));
+                strncpy(*(words + word_size), buffer,6);
+                word_size++;
+                if (word_size > word_limit-1){
+                    word_limit *= 2;
+                    words = realloc(words, word_limit * sizeof(char *));
+                }
+                pthread_mutex_unlock(&mutex);
+
+                if (*(result+5) == '1'){
+                    won = 1;
                     break;
                 }
                 
@@ -169,6 +187,20 @@ void* wordle(void *arg){
             // }
         }
     }
+
+    if (won){
+        pthread_mutex_lock(&mutex);
+        total_guesses += 6 - num_guesses;
+        total_wins += 1;
+        pthread_mutex_unlock(&mutex);
+    }
+    else{
+        pthread_mutex_lock(&mutex);
+        total_guesses += 6 - num_guesses;
+        total_losses += 1;
+        pthread_mutex_unlock(&mutex);
+    }
+
     close(newsd);
     // free(arg);
     pthread_exit(NULL);
@@ -177,7 +209,17 @@ void* wordle(void *arg){
 
 int wordle_server(int argc, char **argv) {
 
+
+
     signal(SIGUSR1, sigusr1_handler);
+
+    total_guesses = 0;
+    total_wins = 0;
+    total_losses = 0;
+
+    word_size = 0;
+    word_limit = 1;
+    
 
     // do argument checking
 
@@ -283,5 +325,14 @@ int wordle_server(int argc, char **argv) {
         }
     }
     
+    printf("total guesses, wins, losses = %i, %i, %i\n", total_guesses, total_wins, total_losses);
+    printf("Total words used: \n");
+
+    char** ptr = words;
+    while (*ptr){
+        printf("%s\n", *ptr);
+        ptr++;
+    }
+
     return EXIT_SUCCESS;
 }   
