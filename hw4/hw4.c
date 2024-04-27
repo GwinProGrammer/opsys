@@ -14,15 +14,16 @@
 #define MAXBUFFER 8192
 
 #define MAX_LINES 5757
-#define MAX_LINE_LENGTH 100
+#define MAX_LINE_LENGTH 6
 
 extern int total_guesses;
 extern int total_wins;
 extern int total_losses;
 extern char ** words;
 
-char lines[MAX_LINES][MAX_LINE_LENGTH];
-int num_lines = 0;
+char** lines;
+int num_words = 0;
+
 
 int sd;
 
@@ -43,7 +44,7 @@ void toLowercase(char *str) {
 
 int is_valid(char* word){
 
-    for(int i = 0; i < num_lines; i++){
+    for(int i = 0; i < num_words; i++){
         int r = strcmp(lines[i],word);
      
         if (r == 0){
@@ -186,7 +187,7 @@ int wordle_server(int argc, char **argv) {
     int port = atoi(argv[1]);
     unsigned int seed = (unsigned int)atoi(argv[2]);
     char* filename = argv[3];
-    int num_words = atoi(argv[4]);
+    num_words = atoi(argv[4]);
 
     printf("port: %i, seed: %i, filename: %s, numwords: %i\n", port, seed, filename, num_words);
 
@@ -197,16 +198,17 @@ int wordle_server(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     
+    lines = (char**)calloc(num_words, sizeof(char*));
 
-    while (fgets(lines[num_lines], MAX_LINE_LENGTH, file) != NULL) {
-
-        lines[num_lines][strcspn(lines[num_lines], "\n")] = '\0';
-        num_lines++;
-
-        if (!(num_lines < num_words)) {
-            printf("Maximum number of lines reached. Exiting.\n");
+    for(int i = 0; i < num_words; i++){
+        lines[i] = (char*)calloc(MAX_LINE_LENGTH+1, sizeof(char));
+        if (fgets(lines[i], MAX_LINE_LENGTH+1, file) == NULL){
             break;
         }
+        lines[i][5] = '\0';
+        // lines[i][strcspn(lines[i], "\n")] = '\0';
+        // printf("%s\n", lines[i]);
+        // printf("%i|%c|%c|%c|%c|%c|%c|\n", i,    lines[i][0],lines[i][1],lines[i][2],lines[i][3],lines[i][4],lines[i][5]);
     }
 
     fclose(file);
@@ -214,7 +216,8 @@ int wordle_server(int argc, char **argv) {
     srand(seed);
 
     // printf("Contents of the file:\n");
-    // for (int i = 0; i < num_lines; i++) {
+
+    // for (int i = 0; i < num_words; i++) {
     //     printf("%s\n", lines[i]);
     // }
     
@@ -232,7 +235,7 @@ int wordle_server(int argc, char **argv) {
     socklen_t length = sizeof(server);
 
     server.sin_family = AF_INET;
-    server.sin_port = htons(8192);
+    server.sin_port = htons(port);
     server.sin_addr.s_addr = htonl( INADDR_ANY );
 
     if (bind(sd, (struct sockaddr *) &server, sizeof(server)) < 0)
@@ -274,8 +277,11 @@ int wordle_server(int argc, char **argv) {
             close(newsd);
             continue;
         }
-        printf("go\n");
-
+        int re = pthread_detach(thread_id);
+        if (re != 0) {
+            perror("pthread_detach failed");
+            return 1;
+        }
     }
     
     return EXIT_SUCCESS;
