@@ -29,7 +29,7 @@ int main()
 
   if ( hp == NULL )
   {
-    fprintf( stderr, "ERROR: gethostbyname() failed\n" );
+    fprintf( stderr, "ERROR: gethostbyname() failed\n" ); 
     return EXIT_FAILURE;
   }
 

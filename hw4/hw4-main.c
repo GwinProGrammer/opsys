@@ -17,7 +17,7 @@ int main( int argc, char ** argv )
   total_guesses = total_wins = total_losses = 0;
   words = calloc( 1, sizeof( char * ) );
   if ( words == NULL ) { perror( "calloc() failed" ); return EXIT_FAILURE; }
-
+  
   int rc = wordle_server( argc, argv );
 
   /* on Submitty, there will be more code here that validates
