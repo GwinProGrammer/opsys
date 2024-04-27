@@ -11,9 +11,9 @@
 #include <ctype.h>
 
 #define MAX_CLIENTS 5
-#define MAXBUFFER 8192
+#define MAXBUFFER 5
 
-#define MAX_LINES 5757
+// #define MAX_LINES 5757
 #define MAX_LINE_LENGTH 6
 
 extern int total_guesses;
@@ -45,8 +45,7 @@ void toLowercase(char *str) {
 int is_valid(char* word){
 
     for(int i = 0; i < num_words; i++){
-        int r = strcmp(lines[i],word);
-     
+        int r = strcmp(*(lines+i),word);
         if (r == 0){
             return 1;
         }
@@ -119,7 +118,7 @@ void* wordle(void *arg){
         }
         else /* n > 0 */
         {
-            buffer[n] = '\0';   
+            *(buffer+n) = '\0';   
 
             printf( "Rcvd message: %s\n",buffer );
 
@@ -142,17 +141,17 @@ void* wordle(void *arg){
                 printf( "Word is valid\n" );
                 num_guesses--;
                 char* result = calculate_string(buffer,"rapid");
-                if (result[5] == '1'){
+                if (*(result+5) == '1'){
                     printf("You got it!\n");
                 }
                 *send_buffer = 'Y';
                 printf("guesses: %i\n", num_guesses);
                 *(short*)(send_buffer + 1) = htons((short)num_guesses);
                 strncpy(send_buffer + 3, result, 5);
-                unsigned short combined_short = (send_buffer[1] << 8) | send_buffer[2];
+                unsigned short combined_short = (*(send_buffer+1) << 8) | *(send_buffer+2);
                 printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
-                if (result[5] == '1'){
+                if (*(result+5) == '1'){
 
                     break;
                 }
@@ -184,10 +183,10 @@ int wordle_server(int argc, char **argv) {
 
     argv = (char**)argv;
 
-    int port = atoi(argv[1]);
-    unsigned int seed = (unsigned int)atoi(argv[2]);
-    char* filename = argv[3];
-    num_words = atoi(argv[4]);
+    int port = atoi(*(argv+1));
+    unsigned int seed = (unsigned int)atoi(*(argv+2));
+    char* filename = *(argv+3);
+    num_words = atoi(*(argv+4));
 
     printf("port: %i, seed: %i, filename: %s, numwords: %i\n", port, seed, filename, num_words);
 
@@ -201,11 +200,11 @@ int wordle_server(int argc, char **argv) {
     lines = (char**)calloc(num_words, sizeof(char*));
 
     for(int i = 0; i < num_words; i++){
-        lines[i] = (char*)calloc(MAX_LINE_LENGTH+1, sizeof(char));
-        if (fgets(lines[i], MAX_LINE_LENGTH+1, file) == NULL){
+        *(lines+i) = (char*)calloc(MAX_LINE_LENGTH+1, sizeof(char));
+        if (fgets(*(lines+i), MAX_LINE_LENGTH+1, file) == NULL){
             break;
         }
-        lines[i][5] = '\0';
+        *(*(lines + i) + 5) = '\0';
         // lines[i][strcspn(lines[i], "\n")] = '\0';
         // printf("%s\n", lines[i]);
         // printf("%i|%c|%c|%c|%c|%c|%c|\n", i,    lines[i][0],lines[i][1],lines[i][2],lines[i][3],lines[i][4],lines[i][5]);
