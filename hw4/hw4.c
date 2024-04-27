@@ -108,8 +108,8 @@ void* wordle(void *arg){
     unsigned long tid = (unsigned long)tidd;
     
     char *buffer = (char *)calloc(6,sizeof(char));
-    // int i_ = rand() % (MAX_LINES); 
-    // char* correct_word = lines[i_];
+    int i_ = rand() % (num_words); 
+    char* correct_word = *(lines+i_);
 
     int won = 0;
     while(num_guesses > 0){
@@ -125,6 +125,7 @@ void* wordle(void *arg){
         else if ( n == 0 )
         {
             printf( "%i: Rcvd 0 from recv(); closing socket...\n", newsd );
+            close(newsd);
         }
         else /* n > 0 */
         {
@@ -141,7 +142,11 @@ void* wordle(void *arg){
                 // printf("%s is not valid", buffer);
                 *send_buffer = 'N';
                 *(short*)(send_buffer + 1) = htons(num_guesses);
-                strncpy(send_buffer + 3, "?????", 5);
+                *(send_buffer + 3) = '?';
+                *(send_buffer + 4) = '?';
+                *(send_buffer + 5) = '?';
+                *(send_buffer + 6) = '?';
+                *(send_buffer + 7) = '?';
                 printf("THREAD %lu: invalid guess; ????? (%i guesses left)\n", tid, num_guesses);
                 n = send( newsd, send_buffer, 8, 0 );
                 
@@ -149,7 +154,7 @@ void* wordle(void *arg){
             else{
                 // printf( "Word is valid\n" );
                 num_guesses--;
-                char* result = calculate_string(buffer,"rapid");
+                char* result = calculate_string(buffer,correct_word);
                 if (*(result+5) == '1'){
                     won = 1;
                     *(result+5) = '\0';
@@ -158,9 +163,13 @@ void* wordle(void *arg){
                 *send_buffer = 'Y';
                 // printf("guesses: %i\n", num_guesses);
                 *(short*)(send_buffer + 1) = htons((short)num_guesses);
-                strncpy(send_buffer + 3, result, 5);
+                *(send_buffer + 3) = *(result+0);
+                *(send_buffer + 4) = *(result+1);
+                *(send_buffer + 5) = *(result+2);
+                *(send_buffer + 6) = *(result+3);
+                *(send_buffer + 7) = *(result+4);
                 // unsigned short combined_short = (*(send_buffer+1) << 8) | *(send_buffer+2);
-                // printf("sending %c%hd%c%c%c%c%c\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
+                // printf("sending |%c|%hd|%c|%c|%c|%c|%c|\n", send_buffer[0],combined_short,send_buffer[3],send_buffer[4],send_buffer[5],send_buffer[6],send_buffer[7]);
                 n = send( newsd, send_buffer, 8, 0 );
 
                 pthread_mutex_lock(&mutex);
