@@ -7,6 +7,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <string.h>
+#include <ctype.h>
 
 #define MAX_CLIENTS 5
 #define MAXBUFFER 8192
@@ -19,13 +21,51 @@ extern int total_wins;
 extern int total_losses;
 extern char ** words;
 
+char lines[MAX_LINES][MAX_LINE_LENGTH];
+int num_lines = 0;
+
+int is_valid(char* word){
+
+    for(int i = 0; i < num_lines; i++){
+        int r = strcmp(lines[i],word);
+        if (r == 0){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+char* calculate_string(char* input, char* correct){
+    char* in_ptr = input;
+    char* cor_ptr = correct;
+    char* str = (char *)calloc(6, sizeof(char));
+    while(in_ptr){
+        if (tolower(*in_ptr) == tolower(*cor_ptr)){
+            *str = toupper(*in_ptr);
+        }
+        else {
+            for(char* ptr = correct; ptr; ptr++){
+                if (tolower(*in_ptr) == tolower(*ptr)){
+                    *str = tolower(*in_ptr);
+                    break;
+                }
+            }
+        }
+        in_ptr++;
+        cor_ptr++;
+        str++;
+    }
+    return str;
+}
 
 void* wordle(void *arg){
+
+    int num_guesses = 6;
     int newsd = *(int*)arg;
     printf("thread successfully created\n");
     char buffer[MAXBUFFER + 1];
     
-    while(1){
+    while(num_guesses > 0){
         int n = recv( newsd, buffer, MAXBUFFER, 0 );
         if ( n == -1 )
         {
@@ -38,15 +78,26 @@ void* wordle(void *arg){
         }
         else /* n > 0 */
         {
-            buffer[n] = '\0';   /* assume this is text data */
-            // inet_ntoa() takes an IP address and returns it as a string
-            // for printing.
+            buffer[n] = '\0';   
+
             printf( "Rcvd message: %s\n",buffer );
 
-            /* send ACK message back to client */
-            n = send( newsd, "ACK\n", 4, 0 );
+            int valid = is_valid(buffer);
+            if (!valid){
+                n = send( newsd, "?????\n", 5, 0 );
+            }
+            else{
+                printf( "Word is valid\n" );
+                num_guesses--;
+                char* result = calculate_string(buffer,"RAVEN");
+                printf("sending %s\n", result);
+                n = send( newsd, result, 5, 0 );
+            }
 
-            if ( n != 4 )
+
+
+
+            if ( n != 5 )
             {
                 perror( "send() failed" );
                 pthread_exit(NULL);
@@ -69,8 +120,26 @@ int wordle_server(int argc, char **argv) {
         perror("Error opening file");
         exit(EXIT_FAILURE);
     }
-    char lines[MAX_LINES][MAX_LINE_LENGTH];
-    int num_lines = 0;
+    
+
+    while (fgets(lines[num_lines], MAX_LINE_LENGTH, file) != NULL) {
+        // Remove newline character if present
+        lines[num_lines][strcspn(lines[num_lines], "\n")] = '\0';
+        num_lines++;
+
+        // Check if maximum number of lines has been reached
+        if (num_lines >= MAX_LINES) {
+            printf("Maximum number of lines reached. Exiting.\n");
+            break;
+        }
+    }
+
+    fclose(file);
+
+    printf("Contents of the file:\n");
+    for (int i = 0; i < num_lines; i++) {
+        printf("%s\n", lines[i]);
+    }
     
     //  struct hostent * hp = gethostbyname( "linux02.cs.rpi.edu" );
 
